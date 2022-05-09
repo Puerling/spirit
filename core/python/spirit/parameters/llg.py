@@ -37,6 +37,22 @@ def get_spin_current_view(p_state, idx_image=-1, idx_chain=-1):
     array_view.shape = (nos, 3)
     return array_view
 
+def get_spin_current_view_cuda(p_state, idx_image=-1, idx_chain=-1):
+    """Returns a `cupy.array_view` of shape (NOS, 3) with the components of the current distribution"""
+    import cupy
+    from cupy.cuda import UnownedMemory, MemoryPointer
+    
+    nos = spirit.system.get_nos(p_state, idx_image, idx_chain)
+    ArrayType = scalar*3*nos
+    Data = _Get_Spin_Current_View(ctypes.c_void_p(p_state), ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+    void_ptr = ctypes.cast(Data, ctypes.c_void_p)
+    mem = UnownedMemory(void_ptr.value, size=ctypes.sizeof(ArrayType), owner=p_state)
+    memptr = MemoryPointer(mem, offset=0)
+    array = cupy.ndarray((nos, 3), dtype=scalar, memptr=memptr)
+    array_view = array.view()
+    array_view.shape = (nos, 3)
+    return array_view
+
 ### ---------------------------------- Set ----------------------------------
 
 _LLG_Set_Output_Tag          = _spirit.Parameters_LLG_Set_Output_Tag
