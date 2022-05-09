@@ -29,7 +29,7 @@ CLASSIFIERS = [
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-INSTALL_REQUIRES = ["numpy"]
+INSTALL_REQUIRES = ["numpy", "cupy"]
 
 ###############################################################################
 
