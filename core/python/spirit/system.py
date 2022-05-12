@@ -48,6 +48,23 @@ def get_spin_directions(p_state, idx_image=-1, idx_chain=-1):
     array_view.shape = (nos, 3)
     return array_view
 
+def get_spin_directions_cuda(p_state, idx_image=-1, idx_chain=-1):
+    """Returns a `cupy.array_view` of shape (NOS, 3) with the components of each spins orientation vector.
+    Changing the contents of this array_view will have direct effect on calculations etc.
+    """
+    import cupy
+    from cupy.cuda import UnownedMemory, MemoryPointer
+    nos = get_nos(p_state, idx_image, idx_chain)
+    ArrayType = scalar*3*nos
+    Data = _Get_Spin_Directions(ctypes.c_void_p(p_state), ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+    void_ptr = ctypes.cast(Data, ctypes.c_void_p)
+    mem = UnownedMemory(void_ptr.value, size=ctypes.sizeof(ArrayType), owner=p_state)
+    device_ptr = MemoryPointer(mem, offset=0)
+    array = cupy.ndarray((nos, 3), dtype=scalar, memptr=device_ptr)
+    array_view = array.view()
+    array_view.shape = (nos, 3)
+    return array_view
+
 ### Get Pointer to Effective Field
 # NOTE: Changing the values of the array_view one can alter the value of the data of the state
 _Get_Effective_Field            = _spirit.System_Get_Effective_Field
