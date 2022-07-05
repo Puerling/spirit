@@ -33,7 +33,7 @@ public:
         const std::vector<std::shared_ptr<vectorfield>> & configurations, const std::vector<vectorfield> & forces,
         std::vector<vectorfield> & forces_virtual ) override;
 
-private:
+
     // Prepare random numbers for thermal fields, if needed
     void Prepare_Thermal_Field() override;
     // Calculate Forces onto Systems
@@ -41,6 +41,7 @@ private:
         const std::vector<std::shared_ptr<vectorfield>> & configurations, std::vector<vectorfield> & forces ) override;
 
 
+private:
     // Check if the Forces are converged
     bool Converged() override;
 
@@ -62,6 +63,10 @@ private:
     scalarfield temperature_distribution;
     // Field for stt gradient method
     vectorfield s_c_grad;
+
+    // Jacobians of spin configurations
+    field<Matrix3> jacobians;
+
     // Current energy
     scalar current_energy = 0;
     // Measure of simulated time in picoseconds

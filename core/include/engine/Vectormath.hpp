@@ -554,6 +554,7 @@ void get_gradient_distribution(
 
 // Calculate the spatial gradient of a vectorfield in a certain direction.
 //      This requires to know the underlying geometry, as well as the boundary conditions.
+// NOTE: This implementation is only applicable to rectangular geometries.
 void directional_gradient(
     const vectorfield & vf, const Data::Geometry & geometry, const intfield & boundary_conditions,
     const Vector3 & direction, vectorfield & gradient );
@@ -561,6 +562,12 @@ void directional_gradient(
 void directional_gradient(
     const vectorfield & vf, const Data::Geometry & geometry, const intfield & boundary_conditions,
     const vectorfield & direction, vectorfield & gradient );
+
+// Calculate the jacobians of a vectorfield
+void jacobian(const vectorfield & vf, const Data::Geometry & geometry, const intfield & boundary_conditions, field<Matrix3> & jacobian);
+
+
+
 
 /////////////////////////////////////////////////////////////////
 
