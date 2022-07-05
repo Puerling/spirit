@@ -27,14 +27,19 @@ public:
     // Method name as string
     std::string Name() override;
 
+    vectorfield spin_current_density;
+
+    void Calculate_Force_Virtual(
+        const std::vector<std::shared_ptr<vectorfield>> & configurations, const std::vector<vectorfield> & forces,
+        std::vector<vectorfield> & forces_virtual ) override;
+
+
     // Prepare random numbers for thermal fields, if needed
     void Prepare_Thermal_Field() override;
     // Calculate Forces onto Systems
     void Calculate_Force(
         const std::vector<std::shared_ptr<vectorfield>> & configurations, std::vector<vectorfield> & forces ) override;
-    void Calculate_Force_Virtual(
-        const std::vector<std::shared_ptr<vectorfield>> & configurations, const std::vector<vectorfield> & forces,
-        std::vector<vectorfield> & forces_virtual ) override;
+
 
 private:
     // Check if the Forces are converged
@@ -64,9 +69,21 @@ private:
 
     // Current energy
     scalar current_energy = 0;
-
     // Measure of simulated time in picoseconds
     double picoseconds_passed;
+
+    // Method name as string
+    int MethodType()
+    {
+        return 0;
+    }
+
+    // Method name as string
+    int SolverType()
+    {
+        return int(solver);
+    }
+
 };
 
 } // namespace Engine

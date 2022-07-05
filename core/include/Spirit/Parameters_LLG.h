@@ -2,7 +2,7 @@
 #ifndef SPIRIT_CORE_PARAMETERS_LLG_H
 #define SPIRIT_CORE_PARAMETERS_LLG_H
 #include "IO.h"
-
+#include "Spirit_Defines.h"
 #include "DLL_Define_Export.h"
 
 struct State;
@@ -15,6 +15,13 @@ LLG Parameters
 #include "Spirit/Parameters_LLG.h"
 ```
 */
+
+
+PREFIX scalar *
+Parameters_LLG_Get_Spin_Current_View( State * state, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
+
+PREFIX void
+Parameters_LLG_Set_Non_Uniform_Currents( State * state, bool non_uniform_currents, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
 
 /*
 Set Output
