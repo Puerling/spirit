@@ -3,10 +3,6 @@ enable_language( CUDA )
 
 find_package( CUDAToolkit 11 REQUIRED )
 
-if( NOT DEFINED CMAKE_CUDA_ARCHITECTURES )
-    set( CMAKE_CUDA_ARCHITECTURES ${SPIRIT_CUDA_ARCHITECTURES} )
-endif()
-
 set( _CUDA_OPTS "" )
 
 if( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" )
@@ -20,7 +16,7 @@ if( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" )
         "--diag-suppress=1675;"
         "--display-error-number;"
     )
-elseif( "${CMAKE_CXX_COMPILER_ID}" MATCHES "NVHPC") 
+elseif( "${CMAKE_CXX_COMPILER_ID}" MATCHES "NVHPC" )
     string(APPEND _CUDA_OPTS
         "-cuda;"
     )

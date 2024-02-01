@@ -3,15 +3,19 @@ MESSAGE( STATUS ">> --------------------- Spirit -------------------------------
 
 
 ######### CMake Version ############################################
-cmake_minimum_required( VERSION 3.10 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.18 FATAL_ERROR )
 ####################################################################
 ### Distinguish between Clang and AppleClang
 cmake_policy( SET CMP0025 NEW )
 
-set( SPIRIT_CUDA_ARCHITECTURES native )
-
 #----- Write a compilation database (compile-commands.json)
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+
+option( SPIRIT_CUDA_ARCHITECTURES "initial value for CMAKE_CUDA_ARCHITECTURES" "native" )
+
+if( NOT DEFINED ENV{CUDAARCHS} )
+    set( ENV{CUDAARCHS} ${SPIRIT_CUDA_ARCHITECTURES} )
+endif()
 
 ######### Meta information #########################################
 #----- Get git revision
