@@ -8,8 +8,7 @@ cmake_minimum_required( VERSION 3.10 FATAL_ERROR )
 ### Distinguish between Clang and AppleClang
 cmake_policy( SET CMP0025 NEW )
 
-
-set( SPIRIT_CUDA_ARCH "70" )
+set( SPIRIT_CUDA_ARCHITECTURES native )
 
 #----- Write a compilation database (compile-commands.json)
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
