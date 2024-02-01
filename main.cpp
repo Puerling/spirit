@@ -57,25 +57,6 @@ int main( int argc, const char * argv[] )
         interaction.setParameters( init_indices, init_bases, {0u, sizeof...(terms)}, field<PolynomialTerm>{terms...} );
 
         vectorfield spins( geometry.nos, make_spherical( theta, phi ) );
-        scalarfield energy( geometry.nos, 0.0 );
-        interaction.Energy_per_Spin( geometry, spins, energy );
-
-        // reference energy
-        const scalar ref_energy
-            = ( ...
-                + ( terms.coefficient * pow( sin( theta ), 2 * terms.n1 + terms.n2 + terms.n3 )
-                    * pow( cos( phi ), terms.n2 ) * pow( sin( phi ), terms.n3 ) ) );
-
-        for( const auto & e : energy )
-        {
-            INFO( "Energy:" )
-            INFO( "trial: " << idx << ", theta=" << theta << ", phi=" << phi );
-            INFO( term_info( terms... ) );
-        };
-
-        INFO( "Total Energy:" )
-        INFO( "trial: " << idx << ", theta=" << theta << ", phi=" << phi );
-        INFO( term_info( terms... ) );
 
         vectorfield gradient( geometry.nos, Vector3::Zero() );
         interaction.Gradient( geometry, spins, gradient );

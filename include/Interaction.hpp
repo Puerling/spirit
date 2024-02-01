@@ -53,8 +53,6 @@ public:
         return terms.size();
     }
 
-    void Energy_per_Spin( const Geometry & geometry, const vectorfield & spins, scalarfield & energy );
-
     void Gradient( const Geometry & geometry, const vectorfield & spins, vectorfield & gradient );
 
 private:
