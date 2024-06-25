@@ -19,7 +19,7 @@ void bare_velocity( const vectorfield & force, const vectorfield & force_previou
 
 void projected_velocity( const Vector2 projection, const vectorfield & force, vectorfield & velocity );
 
-template<bool normalize = true>
+template<bool is_torque = true>
 void apply_velocity(
     const vectorfield & velocity, const vectorfield & force, const scalar dt, vectorfield & configuration );
 
@@ -31,23 +31,23 @@ void set_step( const vectorfield & velocity, const vectorfield & force, const sc
 void sib_transform( const vectorfield & spins, const vectorfield & force, vectorfield & out );
 
 // Heun
-template<bool normalize = true>
+template<bool is_torque = true>
 void heun_predictor(
-    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & configurations_temp,
+    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & delta_configurations,
     vectorfield & configurations_predictor );
 
-template<bool normalize = true>
+template<bool is_torque = true>
 void heun_corrector(
-    const vectorfield & force_virtual_predictor, const vectorfield & configuration_temp,
+    const vectorfield & force_virtual_predictor, const vectorfield & delta_configuration,
     const vectorfield & configuration_predictor, vectorfield & configuration );
 
 // RungeKutta4
-template<bool normalize = true>
+template<bool is_torque = true>
 void rk4_predictor(
-    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & configurations_temp,
+    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & delta_configuration,
     vectorfield & configurations_predictor );
 
-template<bool normalize = true>
+template<bool is_torque = true>
 void rk4_corrector(
     const vectorfield & forces_virtual, const vectorfield & configurations_k1, const vectorfield & configurations_k2,
     const vectorfield & configurations_k3, const vectorfield & configurations_predictor, vectorfield & configurations );

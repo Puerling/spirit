@@ -21,7 +21,7 @@ protected:
     std::vector<vectorfield> forces_virtual_predictor;
 
     std::vector<std::shared_ptr<vectorfield>> configurations_predictor;
-    std::vector<std::shared_ptr<vectorfield>> configurations_temp;
+    std::vector<std::shared_ptr<vectorfield>> delta_configurations;
 };
 
 template<>
@@ -37,9 +37,9 @@ inline void Method_Solver<Solver::Heun>::Initialize()
     for( int i = 0; i < this->noi; i++ )
         configurations_predictor[i] = std::make_shared<vectorfield>( this->nos );
 
-    this->configurations_temp = std::vector<std::shared_ptr<vectorfield>>( this->noi );
+    this->delta_configurations = std::vector<std::shared_ptr<vectorfield>>( this->noi );
     for( int i = 0; i < this->noi; i++ )
-        configurations_temp[i] = std::make_shared<vectorfield>( this->nos );
+        delta_configurations[i] = std::make_shared<vectorfield>( this->nos );
 }
 
 /*
@@ -65,7 +65,7 @@ inline void Method_Solver<Solver::Heun>::Iteration()
     {
         // First step - Predictor
         Solver_Kernels::heun_predictor(
-            *this->configurations[i], this->forces_virtual[i], *this->configurations_temp[i],
+            *this->configurations[i], this->forces_virtual[i], *this->delta_configurations[i],
             *this->configurations_predictor[i] );
     }
 
@@ -79,7 +79,7 @@ inline void Method_Solver<Solver::Heun>::Iteration()
     {
         // Second Step - Corrector
         Solver_Kernels::heun_corrector(
-            this->forces_virtual_predictor[i], *this->configurations_temp[i],
+            this->forces_virtual_predictor[i], *this->delta_configurations[i],
             *this->configurations_predictor[i], *this->configurations[i] );
     }
 }

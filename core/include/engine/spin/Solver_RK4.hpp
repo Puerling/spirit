@@ -26,7 +26,6 @@ protected:
     std::vector<std::shared_ptr<vectorfield>> configurations_k1;
     std::vector<std::shared_ptr<vectorfield>> configurations_k2;
     std::vector<std::shared_ptr<vectorfield>> configurations_k3;
-
 };
 
 template<>

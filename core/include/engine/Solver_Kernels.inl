@@ -48,7 +48,7 @@ inline void projected_velocity( const Vector2 projection, const vectorfield & fo
     }
 }
 
-template<bool normalize>
+template<bool is_torque>
 void apply_velocity(
     const vectorfield & velocity, const vectorfield & force, const scalar dt, vectorfield & configuration )
 {
@@ -61,7 +61,7 @@ void apply_velocity(
         [conf, dt, v, f] SPIRIT_LAMBDA( const int idx )
         {
             conf[idx] += dt * ( v[idx] + 0.5 / mass * f[idx] );
-            if constexpr( normalize )
+            if constexpr( is_torque )
                 conf[idx].normalize();
         } );
 }
@@ -83,86 +83,84 @@ inline void set_step( const vectorfield & velocity, const vectorfield & force, c
 void sib_transform( const vectorfield & spins, const vectorfield & force, vectorfield & out );
 
 // Heun
-template<bool normalize>
-void heun_predictor(
-    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & configurations_temp,
+// torque version of the Heun predictor (assumes normalized configuration vectors)
+template<>
+inline void heun_predictor<true>(
+    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & delta_configuration,
     vectorfield & configurations_predictor )
 {
     Backend::for_each_n(
         SPIRIT_PAR Backend::make_zip_iterator(
-            configuration.begin(), forces_virtual.begin(), configurations_temp.begin(),
+            configuration.begin(), forces_virtual.begin(), delta_configuration.begin(),
             configurations_predictor.begin() ),
         configuration.size(),
         Backend::make_zip_function(
-            [] SPIRIT_LAMBDA( const Vector3 & conf, const Vector3 & force, Vector3 & conf_temp, Vector3 & conf_pred )
+            [] SPIRIT_LAMBDA( const Vector3 & conf, const Vector3 & force, Vector3 & delta, Vector3 & predictor )
             {
-                conf_temp = -conf.cross( force );
-                conf_pred = ( conf + conf_temp );
-                if constexpr( normalize )
-                    conf_pred.normalize();
+                delta     = -conf.cross( force );
+                predictor = ( conf + delta ).normalized();
             } ) );
 }
 
-template<bool normalize>
-void heun_corrector(
-    const vectorfield & force_virtual_predictor, const vectorfield & configuration_temp,
+// torque version of the Heun corrector (assumes normalized configuration vectors)
+template<>
+inline void heun_corrector<true>(
+    const vectorfield & force_virtual_predictor, const vectorfield & delta_configuration,
     const vectorfield & configuration_predictor, vectorfield & configuration )
 {
     Backend::for_each_n(
         SPIRIT_PAR Backend::make_zip_iterator(
-            configuration.begin(), force_virtual_predictor.begin(), configuration_temp.begin(),
+            configuration.begin(), force_virtual_predictor.begin(), delta_configuration.begin(),
             configuration_predictor.begin() ),
         configuration.size(),
         Backend::make_zip_function(
-            [] SPIRIT_LAMBDA(
-                Vector3 & conf, const Vector3 & force, const Vector3 & conf_temp, const Vector3 & conf_pred )
+            [] SPIRIT_LAMBDA( Vector3 & conf, const Vector3 & torque, const Vector3 & delta, const Vector3 & conf_pred )
             {
                 // conf = conf + 0.5 * configurations_temp - 0.5 * ( conf' x A' )
-                conf += 0.5 * conf_temp - 0.5 * conf_pred.cross( force );
-                if constexpr( normalize )
-                    conf.normalize();
+                conf += 0.5 * ( delta - conf_pred.cross( torque ) );
+                conf.normalize();
             } ) );
 }
 
 // RungeKutta4
-template<bool normalize>
-void rk4_predictor(
-    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & configurations_temp,
+// torque version of the 4th order Runge-Kutta predictor (assumes normalized configuration vectors)
+template<>
+inline void rk4_predictor<true>(
+    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & delta_configuration,
     vectorfield & configurations_predictor )
 {
     Backend::for_each_n(
         SPIRIT_PAR Backend::make_zip_iterator(
-            configuration.begin(), forces_virtual.begin(), configurations_temp.begin(),
+            configuration.begin(), forces_virtual.begin(), delta_configuration.begin(),
             configurations_predictor.begin() ),
         configuration.size(),
         Backend::make_zip_function(
-            [] SPIRIT_LAMBDA( const Vector3 & conf, const Vector3 & force, Vector3 & conf_temp, Vector3 & conf_pred )
+            [] SPIRIT_LAMBDA( const Vector3 & conf, const Vector3 & force, Vector3 & delta, Vector3 & conf_pred )
             {
-                conf_temp = -conf.cross( force );
-                conf_pred = ( conf + 0.5 * conf_temp );
-                if constexpr( normalize )
-                    conf_pred.normalize();
+                delta     = -conf.cross( force );
+                conf_pred = ( conf + 0.5 * delta ).normalized();
             } ) );
 }
 
-template<bool normalize>
-void rk4_corrector(
+// torque version of the 4th order Runge-Kutta corrector (assumes normalized configuration vectors)
+template<>
+inline void rk4_corrector<true>(
     const vectorfield & forces_virtual, const vectorfield & configurations_k1, const vectorfield & configurations_k2,
     const vectorfield & configurations_k3, const vectorfield & configurations_predictor, vectorfield & configurations )
 {
     Backend::for_each_n(
         SPIRIT_PAR Backend::make_zip_iterator(
-            ( forces_virtual ).begin(), ( configurations_k1 ).begin(), ( configurations_k2 ).begin(),
-            ( configurations_k3 ).begin(), ( configurations_predictor ).begin(), ( configurations ).begin() ),
-        ( configurations ).size(),
+            forces_virtual.begin(), configurations_k1.begin(), configurations_k2.begin(), configurations_k3.begin(),
+            configurations_predictor.begin(), configurations.begin() ),
+        configurations.size(),
         Backend::make_zip_function(
             [] SPIRIT_LAMBDA(
-                const Vector3 & force, const Vector3 & k1, const Vector3 & k2, const Vector3 & k3,
+                const Vector3 & torque, const Vector3 & k1, const Vector3 & k2, const Vector3 & k3,
                 const Vector3 & conf_pred, Vector3 & conf )
             {
-                conf += 1.0 / 6.0 * k1 + 1.0 / 3.0 * k2 + 1.0 / 3.0 * k3 - 1.0 / 6.0 * /*-k4=*/conf_pred.cross( force );
-                if constexpr( normalize )
-                    conf.normalize();
+                conf
+                    += 1.0 / 6.0 * k1 + 1.0 / 3.0 * k2 + 1.0 / 3.0 * k3 - 1.0 / 6.0 * /*-k4=*/conf_pred.cross( torque );
+                conf.normalize();
             } ) );
 }
 
