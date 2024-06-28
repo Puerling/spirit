@@ -3,6 +3,7 @@
 #include <data/Geometry.hpp>
 #include <engine/Backend.hpp>
 #include <engine/Vectormath_Defines.hpp>
+#include <engine/spin_lattice/StateType.hpp>
 #include <utility/Constants.hpp>
 
 #include <random>
@@ -316,19 +317,16 @@ inline void cross( const vectorfield & vf1, const vectorfield & vf2, vectorfield
     Backend::transform( SPIRIT_PAR vf1.begin(), vf1.end(), vf2.begin(), out.begin(), Backend::cross<Vector3>{} );
 }
 
-template<typename StateType, typename GradientType, typename EnergyFunction>
-void Gradient( const StateType & spins, GradientType & gradient, EnergyFunction && energy, scalar delta )
+template<typename EnergyFunction>
+void Gradient( const vectorfield & spins, vectorfield & gradient, EnergyFunction && energy, scalar delta )
 {
     static_assert( std::is_convertible_v<decltype( energy( spins ) ), scalar> );
 
-    std::size_t nos = spins.size();
+    const std::size_t nos = spins.size();
 
     // Calculate finite difference
-    vectorfield spins_plus( nos );
-    vectorfield spins_minus( nos );
-
-    spins_plus  = spins;
-    spins_minus = spins;
+    vectorfield spins_plus  = spins;
+    vectorfield spins_minus = spins;
 
     for( std::size_t i = 0; i < nos; ++i )
     {
@@ -351,10 +349,60 @@ void Gradient( const StateType & spins, GradientType & gradient, EnergyFunction 
     }
 }
 
-template<typename StateType, typename HessianType, typename GradientFunction>
-void Hessian( const StateType & spins, HessianType & hessian, GradientFunction && gradient, scalar delta )
+namespace detail
 {
-    static_assert( std::is_invocable_v<GradientFunction, const StateType &, vectorfield &> );
+
+template<SpinLattice::Field... field, typename EnergyFunction>
+void Gradient_Impl(
+    SpinLattice::enum_sequence<SpinLattice::Field, field...>, const SpinLattice::StateType & state,
+    SpinLattice::quantity<vectorfield> & gradient, EnergyFunction && energy, scalar delta )
+{
+    using SpinLattice::get;
+    using SpinLattice::StateType;
+
+    // Calculate finite difference
+    StateType state_plus  = state;
+    StateType state_minus = state;
+
+    ( ...,
+      [&state_plus, &state_minus, &gradient, &energy, nos = get<field>( state ).size(), delta]
+      {
+          for( std::size_t i = 0; i < nos; ++i )
+          {
+#pragma unroll
+              for( std::uint8_t dim = 0; dim < 3; ++dim )
+              {
+                  // Displace
+                  get<field>( state_plus )[i][dim] += delta;
+                  get<field>( state_minus )[i][dim] -= delta;
+
+                  // Calculate gradient component
+                  get<field>( gradient )[i][dim] = 0.5 * ( energy( state_plus ) - energy( state_minus ) ) / delta;
+
+                  // Un-Displace
+                  get<field>( state_plus )[i][dim] -= delta;
+                  get<field>( state_minus )[i][dim] += delta;
+              }
+          }
+      }() );
+}
+
+} // namespace detail
+
+template<typename EnergyFunction>
+void Gradient(
+    const SpinLattice::StateType & state, SpinLattice::quantity<vectorfield> & gradient, EnergyFunction && energy,
+    scalar delta )
+{
+    static_assert( std::is_convertible_v<decltype( energy( state ) ), scalar> );
+
+    detail::Gradient_Impl( SpinLattice::make_enum_sequence<SpinLattice::Field>(), state, gradient, energy, delta );
+}
+
+template<typename GradientFunction>
+void Hessian( const vectorfield & spins, MatrixX & hessian, GradientFunction && gradient, scalar delta )
+{
+    static_assert( std::is_invocable_v<GradientFunction, const vectorfield &, vectorfield &> );
 
     // This is a regular finite difference implementation (probably not very efficient)
     // using the differences between gradient values (not function)
@@ -362,15 +410,10 @@ void Hessian( const StateType & spins, HessianType & hessian, GradientFunction &
 
     std::size_t nos = spins.size();
 
-    vectorfield spins_pi( nos );
-    vectorfield spins_mi( nos );
-    vectorfield spins_pj( nos );
-    vectorfield spins_mj( nos );
-
-    spins_pi = spins;
-    spins_mi = spins;
-    spins_pj = spins;
-    spins_mj = spins;
+    vectorfield spins_pi = spins;
+    vectorfield spins_mi = spins;
+    vectorfield spins_pj = spins;
+    vectorfield spins_mj = spins;
 
     vectorfield grad_pi( nos );
     vectorfield grad_mi( nos );

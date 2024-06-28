@@ -10,6 +10,7 @@ scalar HTST_Calculate(
     State * state, int idx_image_minimum, int idx_image_sp, int n_eigenmodes_keep, bool sparse, int idx_chain )
 try
 {
+#ifndef SPIRIT_ENABLE_LATTICE
     auto [image_minimum, _] = from_indices( state, idx_image_minimum, idx_chain );
 
     auto [image_sp, chain] = from_indices( state, idx_image_sp, idx_chain );
@@ -26,6 +27,9 @@ try
 #endif
 
     return info.prefactor;
+#else
+    return 0;
+#endif
 }
 catch( ... )
 {

@@ -30,6 +30,7 @@ using Catch::Matchers::WithinAbs;
 [[maybe_unused]] constexpr scalar epsilon_6 = 1e-6;
 #endif
 
+#ifndef SPIRIT_ENABLE_LATTICE
 // TODO: Implement proper `Get_{Exchange,DMI}_Shells` API functions and do the same for neighbours.
 TEST_CASE( "Parse Hamiltonian (Pairs) config and check parsed values using the C-API", "[configparser]" )
 {
@@ -226,3 +227,6 @@ TEST_CASE( "Parse Hamiltonian (Pairs) config and check parsed values using the C
         REQUIRE( pb_zero_padding == pb_zero_padding_ref );
     }
 }
+#else
+// TODO(spin-lattice): Implement configparser test for spin-lattice Hamiltonian
+#endif

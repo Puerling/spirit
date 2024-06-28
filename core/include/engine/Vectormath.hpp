@@ -2,6 +2,7 @@
 
 #include <data/Geometry.hpp>
 #include <engine/Vectormath_Defines.hpp>
+#include <engine/spin_lattice/StateType.hpp>
 
 #include <Eigen/Core>
 
@@ -195,12 +196,17 @@ void set_c_cross( const scalar & c, const Vector3 & a, const vectorfield & b, ve
 void set_c_cross( const scalar & c, const vectorfield & a, const vectorfield & b, vectorfield & out );
 
 // finite difference implementation for gradients
-template<typename StateType, typename GradientType, typename EnergyFunction>
-void Gradient( const StateType & spins, GradientType & gradient, EnergyFunction && energy, scalar delta = 1e-3 );
+template<typename EnergyFunction>
+void Gradient( const vectorfield & spins, vectorfield & gradient, EnergyFunction && energy, scalar delta = 1e-3 );
+
+template<typename EnergyFunction>
+void Gradient(
+    const SpinLattice::StateType & state, SpinLattice::quantity<vectorfield> & gradient, EnergyFunction && energy,
+    scalar delta = 1e-3 );
 
 // finite difference implementation for hessians
-template<typename StateType, typename HessianType, typename GradientFunction>
-void Hessian( const StateType & spins, HessianType & hessian, GradientFunction && gradient, scalar delta = 1e-3 );
+template<typename GradientFunction>
+void Hessian( const vectorfield & spins, MatrixX & hessian, GradientFunction && gradient, scalar delta = 1e-3 );
 
 } // namespace Vectormath
 

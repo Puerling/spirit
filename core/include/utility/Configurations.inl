@@ -31,7 +31,8 @@ void Random_Cube( vectorfield & field, const Data::Geometry & geometry, RandomFu
 {
     auto & positions = geometry.positions;
 
-    auto distribution = std::uniform_real_distribution<scalar>( -1, 1 );
+    const scalar size = 0.05 * geometry.lattice_constant;
+    auto distribution = std::uniform_real_distribution<scalar>( -size, size );
     for( unsigned int iatom = 0; iatom < field.size(); ++iatom )
     {
         if( filter( positions[iatom] ) )

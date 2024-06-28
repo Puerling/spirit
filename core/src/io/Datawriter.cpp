@@ -215,6 +215,8 @@ void Write_Chain_Energies( const ChainType & chain, const int iteration, const s
 
 template void Write_Chain_Energies(
     const Data::Spin_System_Chain<Engine::Spin::HamiltonianVariant> &, const int, const std::string &, Flags );
+template void Write_Chain_Energies(
+    const Data::Spin_System_Chain<Engine::SpinLattice::HamiltonianVariant> &, const int, const std::string &, Flags );
 
 template<typename ChainType>
 void Write_Chain_Energies_Interpolated( const ChainType & chain, const std::string & filename, Flags flags )
@@ -267,6 +269,8 @@ void Write_Chain_Energies_Interpolated( const ChainType & chain, const std::stri
 
 template void Write_Chain_Energies_Interpolated(
     const Data::Spin_System_Chain<Engine::Spin::HamiltonianVariant> &, const std::string &, Flags );
+template void Write_Chain_Energies_Interpolated(
+    const Data::Spin_System_Chain<Engine::SpinLattice::HamiltonianVariant> &, const std::string &, Flags );
 
 void Write_Image_Energy_Contributions(
     const Data::System_Energy & E, const Data::Geometry & geometry, const std::string & filename,

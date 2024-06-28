@@ -11,6 +11,7 @@
 #include <data/State.hpp>
 #include <engine/Vectormath.hpp>
 #include <engine/spin/Method_Solver.hpp>
+#include <engine/spin_lattice/Method_Solver.hpp>
 
 #include "catch.hpp"
 
@@ -38,6 +39,7 @@ using Catch::Matchers::WithinAbs;
 [[maybe_unused]] constexpr scalar epsilon_6 = 1e-6;
 #endif
 
+#ifndef SPIRIT_ENABLE_LATTICE
 TEST_CASE( "Dynamics solvers should follow Larmor precession", "[physics]" )
 {
     using Engine::Spin::Solver;
@@ -205,11 +207,189 @@ TEST_CASE(
     }
 }
 
+#else
+TEST_CASE( "Dynamics solvers should follow lattice excitations for a dimer", "[physics]" )
+{
+    using Engine::SpinLattice::Solver;
+    std::vector<Solver> solvers{
+        Solver::RungeKutta4,
+        Solver::Heun,
+    };
+
+    // TODO: Write necessary API functions
+
+    SECTION( "spring potential" )
+    {
+        constexpr auto input_file = "core/test/input/physics_lattice_spring.cfg";
+
+        // Create State
+        auto state = std::shared_ptr<State>( State_Setup( input_file ), State_Delete );
+
+        // (NOTE: this pointer will stay valid throughout this test)
+        const auto * displacement = System_Get_Lattice_Displacement( state.get(), -1, -1 );
+        const auto * momentum     = System_Get_Lattice_Momentum( state.get(), -1, -1 );
+
+        // Get time step of method
+        const scalar dt = Parameters_LLG_Get_Time_Step( state.get() );
+        REQUIRE( dt > 0 );
+
+        auto & image = *state->active_image;
+
+        const scalar omega = [&image]
+        {
+            const auto * kinetic_data = image.hamiltonian->data<Engine::SpinLattice::Interaction::Lattice_Kinetic>();
+            const auto * potential_cache
+                = image.hamiltonian->cache<Engine::SpinLattice::Interaction::Lattice_Spring_Potential>();
+            REQUIRE( kinetic_data != nullptr );
+            REQUIRE( kinetic_data->magnitudes.size() >= 3 );
+            for( int i = 1; i < 3; ++i )
+            {
+                INFO( "i=" << i << "\n" )
+                REQUIRE( kinetic_data->magnitudes[0] == kinetic_data->magnitudes[i] );
+            }
+            REQUIRE( potential_cache != nullptr );
+            REQUIRE( !potential_cache->pairs.empty() );
+            REQUIRE( potential_cache->pairs[0] == Pair{ 0, 0, { 1, 0, 0 } } );
+            REQUIRE( image.hamiltonian->get_geometry().bravais_vectors[0] == Vector3{ 1, 0, 0 } );
+            REQUIRE( !potential_cache->magnitudes.empty() );
+
+            // factor 2 on the coupling constant due to the symmetric deflection (u_1 = -u_2)
+            // dp_1/dt = k * (u_1 - u_2) = 2k * u_1
+            // dp_2/dt = k * (u_2 - u_1) = 2k * u_2
+            return std::sqrt( 2 * kinetic_data->magnitudes[0] * potential_cache->magnitudes[0] );
+        }();
+
+        constexpr auto idx = []( const int ispin, const int idim ) constexpr { return 3 * ispin + idim; };
+
+        for( auto solver : solvers )
+        {
+            static constexpr scalar p0 = 0.05;
+            // set state
+            Engine::Vectormath::get_random_vectorfield( image.llg_parameters->prng, image.state->spin );
+            image.state->momentum     = { Vector3{ -p0, 0, 0 }, Vector3{ p0, 0, 0 } };
+            image.state->displacement = { Vector3::Zero(), Vector3::Zero() };
+            // start simulation in single-shot mode
+            Simulation_LLG_Start( state.get(), static_cast<int>( solver ), -1, -1, true );
+
+            for( int i = 0; i < 100; ++i )
+            {
+                INFO( fmt::format(
+                    "Solver \"{}: {}\" failed lattice_trajectory test at iteration {}", static_cast<int>( solver ),
+                    name( solver ), i ) );
+
+                REQUIRE( state->method_image[0]->ContinueIterating() );
+                // A single iteration
+                Simulation_SingleShot( state.get() );
+                const scalar phi = dt * ( i + 1 ) * omega;
+                const scalar ux  = std::sin( phi ) * p0 * omega;
+                const scalar px  = std::cos( phi ) * p0;
+                // const scalar uy = 0, py = 0, uz = 0, pz = 0;
+
+                // TODO: why is precision so low for Heun solver? Other solvers manage ~1e-10
+                REQUIRE_THAT( displacement[idx( 0, 0 )], WithinAbs( -ux, epsilon_6 ) );
+                REQUIRE_THAT( displacement[idx( 0, 1 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( displacement[idx( 0, 2 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( displacement[idx( 1, 0 )], WithinAbs( ux, epsilon_6 ) );
+                REQUIRE_THAT( displacement[idx( 1, 1 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( displacement[idx( 1, 2 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( momentum[idx( 0, 0 )], WithinAbs( -px, epsilon_6 ) );
+                REQUIRE_THAT( momentum[idx( 0, 1 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( momentum[idx( 0, 2 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( momentum[idx( 1, 0 )], WithinAbs( px, epsilon_6 ) );
+                REQUIRE_THAT( momentum[idx( 1, 1 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( momentum[idx( 1, 2 )], WithinAbs( 0, epsilon_2 ) );
+            }
+
+            Simulation_Stop( state.get() );
+        }
+    }
+
+    SECTION( "harmonic potential (force constant matrix)" )
+    {
+        constexpr auto input_file = "core/test/input/physics_lattice_harmonic.cfg";
+        // Create State
+        auto state = std::shared_ptr<State>( State_Setup( input_file ), State_Delete );
+
+        // (NOTE: this pointer will stay valid throughout this test)
+        const auto * displacement = System_Get_Lattice_Displacement( state.get(), -1, -1 );
+        const auto * momentum     = System_Get_Lattice_Momentum( state.get(), -1, -1 );
+
+        // Get time step of method
+        const scalar dt = Parameters_LLG_Get_Time_Step( state.get() );
+        REQUIRE( dt > 0 );
+
+        auto & image = *state->active_image;
+
+        const scalar omega = [&image]
+        {
+            const auto * kinetic_data = image.hamiltonian->data<Engine::SpinLattice::Interaction::Lattice_Kinetic>();
+            const auto * potential_data
+                = image.hamiltonian->data<Engine::SpinLattice::Interaction::Lattice_Harmonic_Potential>();
+            REQUIRE( ( kinetic_data != nullptr && !kinetic_data->magnitudes.empty() ) );
+
+            REQUIRE( potential_data != nullptr );
+            REQUIRE( !potential_data->pairs.empty() );
+            REQUIRE( potential_data->pairs[0] == Pair{ 0, 0, { 0, 0, 0 } } );
+            REQUIRE( !potential_data->normals.empty() );
+            REQUIRE( potential_data->normals[0] == Vector3{ 1, 0, 0 } );
+            REQUIRE( !potential_data->magnitudes.empty() );
+
+            // factor 2 on coupling constant due to definition of the force constant matrix
+            return std::sqrt( 2 * kinetic_data->magnitudes[0] * potential_data->magnitudes[0] );
+        }();
+
+        constexpr auto idx = []( const int ispin, const int idim ) constexpr { return 3 * ispin + idim; };
+
+        for( auto solver : solvers )
+        {
+            static constexpr scalar p0 = 0.1;
+            // set state
+            Engine::Vectormath::get_random_vectorfield( image.llg_parameters->prng, image.state->spin );
+            image.state->momentum     = { Vector3{ p0, 0, 0 } };
+            image.state->displacement = { Vector3::Zero() };
+            // start simulation in single-shot mode
+            Simulation_LLG_Start( state.get(), static_cast<int>( solver ), -1, -1, true );
+
+            for( int i = 0; i < 100; ++i )
+            {
+                INFO( fmt::format(
+                    "Solver \"{}: {}\" failed lattice_trajectory test at iteration {}", static_cast<int>( solver ),
+                    name( solver ), i ) );
+
+                REQUIRE( state->method_image[0]->ContinueIterating() );
+                // A single iteration
+                Simulation_SingleShot( state.get() );
+                const scalar phi = dt * ( i + 1 ) * omega;
+                const scalar ux  = std::sin( phi ) * p0 * omega;
+                const scalar px  = std::cos( phi ) * p0;
+                // const scalar uy = 0, py = 0, uz = 0, pz = 0;
+
+                // TODO: why is precision so low for Heun solver? Other solvers manage ~1e-10
+                REQUIRE_THAT( displacement[idx( 0, 0 )], WithinAbs( ux, epsilon_6 ) );
+                REQUIRE_THAT( displacement[idx( 0, 1 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( displacement[idx( 0, 2 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( momentum[idx( 0, 0 )], WithinAbs( px, epsilon_6 ) );
+                REQUIRE_THAT( momentum[idx( 0, 1 )], WithinAbs( 0, epsilon_2 ) );
+                REQUIRE_THAT( momentum[idx( 0, 2 )], WithinAbs( 0, epsilon_2 ) );
+            }
+
+            Simulation_Stop( state.get() );
+        }
+    }
+}
+
+#endif
+
 // Hamiltonians to be tested
-static constexpr std::array hamiltonian_input_files{ "core/test/input/fd_pairs.cfg",
-                                                     "core/test/input/fd_neighbours.cfg",
-                                                     // "core/test/input/fd_gaussian.cfg", // TODO: issue with precision
-                                                     "core/test/input/fd_quadruplet.cfg" };
+static constexpr std::array hamiltonian_input_files{
+#ifndef SPIRIT_ENABLE_LATTICE
+    "core/test/input/fd_pairs.cfg", "core/test/input/fd_neighbours.cfg",
+    // "core/test/input/fd_gaussian.cfg", // TODO: issue with precision
+    "core/test/input/fd_quadruplet.cfg"
+#else
+    "core/test/input/lattice_spring.cfg", "core/test/input/lattice_harmonic.cfg"
+#endif
+};
 
 TEST_CASE( "Finite difference and regular Hamiltonian should match", "[physics]" )
 {
@@ -221,8 +401,10 @@ TEST_CASE( "Finite difference and regular Hamiltonian should match", "[physics]"
         Configuration_Random( state.get() );
         const auto & spins = *state->active_image->state;
         auto & hamiltonian = state->active_image->hamiltonian;
+        REQUIRE( hamiltonian->active_count() != 0 );
 
         // Compare gradients
+#ifndef SPIRIT_ENABLE_LATTICE
         auto grad    = vectorfield( state->nos, Vector3::Zero() );
         auto grad_fd = vectorfield( state->nos, Vector3::Zero() );
         for( const auto & interaction : hamiltonian->active_interactions() )
@@ -261,9 +443,50 @@ TEST_CASE( "Finite difference and regular Hamiltonian should match", "[physics]"
             INFO( "Hessian      =\n" << hessian << "\n" );
             REQUIRE( hessian_fd.isApprox( hessian, epsilon_3 ) );
         }
+#else
+        auto grad    = Engine::SpinLattice::make_quantity( vectorfield( state->nos, Vector3::Zero() ) );
+        auto grad_fd = Engine::SpinLattice::make_quantity( vectorfield( state->nos, Vector3::Zero() ) );
+
+        for( const auto & interaction : hamiltonian->active_interactions() )
+        {
+            Engine::Vectormath::fill( grad.spin, Vector3::Zero() );
+            Engine::Vectormath::fill( grad_fd.spin, Vector3::Zero() );
+            Engine::Vectormath::fill( grad.displacement, Vector3::Zero() );
+            Engine::Vectormath::fill( grad_fd.displacement, Vector3::Zero() );
+            Engine::Vectormath::fill( grad.momentum, Vector3::Zero() );
+            Engine::Vectormath::fill( grad_fd.momentum, Vector3::Zero() );
+
+            interaction->Gradient( spins, grad );
+            Engine::Vectormath::Gradient(
+                spins, grad_fd,
+                [&interaction]( const auto & state ) -> scalar { return interaction->Energy( state ); } );
+            INFO( "Interaction: " << interaction->Name() << "\n" );
+
+            const auto test = [nos = state->nos](
+                                  const std::string_view label, const vectorfield & grad, const vectorfield & grad_fd )
+            {
+                for( int i = 0; i < nos; ++i )
+                {
+                    // low precision for gradients close to zero
+                    const scalar delta_norm = ( grad_fd[i] - grad[i] ).norm();
+                    INFO( label << ( label.empty() ? "" : "\n" ) );
+                    INFO( "i = " << i << ", epsilon = " << epsilon_6 << "\n" );
+                    INFO( "Gradient (FD) = " << grad_fd[i].transpose() << "\n" );
+                    INFO( "Gradient      = " << grad[i].transpose() << "\n" );
+                    INFO( "|Δ|           = " << delta_norm );
+                    REQUIRE( delta_norm <= epsilon_6 );
+                }
+            };
+
+            test( "Field::Spin", grad.spin, grad_fd.spin );
+            test( "Field::Momentum", grad.momentum, grad_fd.momentum );
+            test( "Field::Displacement", grad.displacement, grad_fd.displacement );
+        }
+#endif
     }
 }
 
+#ifndef SPIRIT_ENABLE_LATTICE
 TEST_CASE( "Dipole-Dipole Interaction", "[physics]" )
 {
     // Config file where only DDI is enabled
@@ -317,3 +540,4 @@ TEST_CASE( "Dipole-Dipole Interaction", "[physics]" )
     INFO( "Energy (FFT)    = " << energy_fft << "\n" );
     REQUIRE_THAT( energy_fft, WithinAbs( energy_direct, epsilon_6 ) );
 }
+#endif

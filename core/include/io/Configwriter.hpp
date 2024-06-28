@@ -9,6 +9,7 @@
 #include <data/Spin_System.hpp>
 #include <data/Spin_System_Chain.hpp>
 #include <engine/spin/Hamiltonian.hpp>
+#include <engine/spin_lattice/Hamiltonian.hpp>
 
 namespace IO
 {
@@ -37,6 +38,9 @@ void Parameters_Method_MMF_to_Config(
 
 void Hamiltonian_to_Config(
     const std::string & config_file, const std::shared_ptr<Engine::Spin::HamiltonianVariant> hamiltonian );
+
+void Hamiltonian_to_Config(
+    const std::string & config_file, const std::shared_ptr<Engine::SpinLattice::HamiltonianVariant> hamiltonian );
 
 } // namespace IO
 

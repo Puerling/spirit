@@ -82,6 +82,11 @@ try
     block.clear();
     block.emplace_back( "=====================================================" );
     block.emplace_back( "========== Optimization Info" );
+#ifdef SPIRIT_ENABLE_LATTICE
+    block.emplace_back( "    Using spin-lattice Hamiltonian" );
+#else
+    block.emplace_back( "    Using (pure) spin Hamiltonian" );
+#endif
 // Log OpenMP info
 #ifdef SPIRIT_USE_OPENMP
     int nt = omp_get_max_threads();

@@ -17,6 +17,7 @@ set( SPIRIT_BUILD_FOR_CXX     ON   CACHE BOOL "Build the static library for C++ 
 ### Feature switches for Spirit
 set( SPIRIT_ENABLE_PINNING    OFF  CACHE BOOL "Enable pinning individual or rows of spins." )
 set( SPIRIT_ENABLE_DEFECTS    OFF  CACHE BOOL "Enable defects and disorder in the lattice." )
+set( SPIRIT_ENABLE_LATTICE    OFF  CACHE BOOL "Enable lattice vibrational degrees of freedom." )
 ### Options for Spirit
 set( SPIRIT_BUILD_TEST        ON   CACHE BOOL "Build unit tests for the Spirit library." )
 set( SPIRIT_TEST_COVERAGE     OFF  CACHE BOOL "Build in debug mode with special flags for coverage checks." )

@@ -1,4 +1,6 @@
 #include <data/Spin_System_Chain.hpp>
+#include <engine/spin/Hamiltonian.hpp>
+#include <engine/spin_lattice/Hamiltonian.hpp>
 #include <utility/Exception.hpp>
 
 namespace Data
@@ -54,3 +56,4 @@ catch( ... )
 } // namespace Data
 
 template class Data::Spin_System_Chain<Engine::Spin::HamiltonianVariant>;
+template class Data::Spin_System_Chain<Engine::SpinLattice::HamiltonianVariant>;

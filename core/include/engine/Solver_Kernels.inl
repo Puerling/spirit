@@ -102,6 +102,25 @@ inline void heun_predictor<true>(
             } ) );
 }
 
+// linear version of the Heun predictor
+template<>
+inline void heun_predictor<false>(
+    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & delta_configuration,
+    vectorfield & configurations_predictor )
+{
+    Backend::for_each_n(
+        SPIRIT_PAR Backend::make_zip_iterator(
+            configuration.begin(), forces_virtual.begin(), delta_configuration.begin(),
+            configurations_predictor.begin() ),
+        configuration.size(),
+        Backend::make_zip_function(
+            [] SPIRIT_LAMBDA( const Vector3 & conf, const Vector3 & force, Vector3 & delta, Vector3 & predictor )
+            {
+                delta     = force;
+                predictor = conf + delta;
+            } ) );
+}
+
 // torque version of the Heun corrector (assumes normalized configuration vectors)
 template<>
 inline void heun_corrector<true>(
@@ -120,6 +139,20 @@ inline void heun_corrector<true>(
                 conf += 0.5 * ( delta - conf_pred.cross( torque ) );
                 conf.normalize();
             } ) );
+}
+
+// linear version of the Heun corrector
+template<>
+inline void heun_corrector<false>(
+    const vectorfield & force_virtual_predictor, const vectorfield & delta_configuration,
+    const vectorfield & /*configuration_predictor*/, vectorfield & configuration )
+{
+    Backend::for_each_n(
+        SPIRIT_PAR Backend::make_zip_iterator(
+            configuration.begin(), force_virtual_predictor.begin(), delta_configuration.begin() ),
+        configuration.size(),
+        Backend::make_zip_function( [] SPIRIT_LAMBDA( Vector3 & conf, const Vector3 & force, const Vector3 & delta )
+                                    { conf += 0.5 * ( delta + force ); } ) );
 }
 
 // RungeKutta4
@@ -141,6 +174,25 @@ inline void rk4_predictor_1<true>(
             } ) );
 }
 
+// linear version of the 4th order Runge-Kutta predictor
+template<>
+inline void rk4_predictor_1<false>(
+    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & k1,
+    vectorfield & configurations_predictor )
+{
+    Backend::for_each_n(
+        SPIRIT_PAR Backend::make_zip_iterator(
+            configuration.begin(), forces_virtual.begin(), k1.begin(),
+            configurations_predictor.begin() ),
+        configuration.size(),
+        Backend::make_zip_function(
+            [] SPIRIT_LAMBDA( const Vector3 & conf, const Vector3 & force, Vector3 & delta, Vector3 & conf_pred )
+            {
+                delta     = force;
+                conf_pred = ( conf + 0.5 * delta );
+            } ) );
+}
+
 template<>
 inline void rk4_predictor_2<true>(
     const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & k2,
@@ -159,6 +211,24 @@ inline void rk4_predictor_2<true>(
 }
 
 template<>
+inline void rk4_predictor_2<false>(
+    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & k2,
+    vectorfield & configurations_predictor )
+{
+    Backend::for_each_n(
+        SPIRIT_PAR Backend::make_zip_iterator(
+            configuration.begin(), forces_virtual.begin(), k2.begin(),
+            configurations_predictor.begin() ),
+        configuration.size(),
+        Backend::make_zip_function(
+            [] SPIRIT_LAMBDA( const Vector3 & conf, const Vector3 & force, Vector3 & delta, Vector3 & conf_pred )
+            {
+                delta     = force;
+                conf_pred = ( conf + 0.5 * delta );
+            } ) );
+}
+
+template<>
 inline void rk4_predictor_3<true>(
     const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & k3,
     vectorfield & configurations_predictor )
@@ -172,6 +242,24 @@ inline void rk4_predictor_3<true>(
             {
                 delta     = -conf_pred.cross( force );
                 conf_pred = ( conf + delta ).normalized();
+            } ) );
+}
+
+template<>
+inline void rk4_predictor_3<false>(
+    const vectorfield & configuration, const vectorfield & forces_virtual, vectorfield & k3,
+    vectorfield & configurations_predictor )
+{
+    Backend::for_each_n(
+        SPIRIT_PAR Backend::make_zip_iterator(
+            configuration.begin(), forces_virtual.begin(), k3.begin(),
+            configurations_predictor.begin() ),
+        configuration.size(),
+        Backend::make_zip_function(
+            [] SPIRIT_LAMBDA( const Vector3 & conf, const Vector3 & force, Vector3 & delta, Vector3 & conf_pred )
+            {
+                delta     = force;
+                conf_pred = ( conf + delta );
             } ) );
 }
 
@@ -195,6 +283,24 @@ inline void rk4_corrector<true>(
                     += 1.0 / 6.0 * k1 + 1.0 / 3.0 * k2 + 1.0 / 3.0 * k3 - 1.0 / 6.0 * /*-k4=*/conf_pred.cross( torque );
                 conf.normalize();
             } ) );
+}
+
+// linear version of the 4th order Runge-Kutta corrector
+template<>
+inline void rk4_corrector<false>(
+    const vectorfield & forces_virtual, const vectorfield & configurations_k1, const vectorfield & configurations_k2,
+    const vectorfield & configurations_k3, const vectorfield & /*configurations_predictor*/,
+    vectorfield & configurations )
+{
+    Backend::for_each_n(
+        SPIRIT_PAR Backend::make_zip_iterator(
+            forces_virtual.begin(), configurations_k1.begin(), configurations_k2.begin(), configurations_k3.begin(),
+            configurations.begin() ),
+        configurations.size(),
+        Backend::make_zip_function(
+            [] SPIRIT_LAMBDA(
+                const Vector3 & force, const Vector3 & k1, const Vector3 & k2, const Vector3 & k3, Vector3 & conf )
+            { conf += 1.0 / 6.0 * k1 + 1.0 / 3.0 * k2 + 1.0 / 3.0 * k3 + 1.0 / 6.0 * /*k4=*/force; } ) );
 }
 
 // Depondt

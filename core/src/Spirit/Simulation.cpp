@@ -8,6 +8,7 @@
 #include <engine/spin/Method_LLG.hpp>
 #include <engine/spin/Method_MC.hpp>
 #include <engine/spin/Method_MMF.hpp>
+#include <engine/spin_lattice/Method_LLG.hpp>
 #include <utility/Exception.hpp>
 #include <utility/Logging.hpp>
 
@@ -23,9 +24,12 @@ void free_run_info( Simulation_Run_Info info ) noexcept
 namespace
 {
 
+#ifndef SPIRIT_ENABLE_LATTICE
 using Engine::Spin::Solver;
+#else
+using Engine::SpinLattice::Solver;
+#endif
 
-// alias for efficiently smuggling a constexpr value into a C++17 lambda
 template<Solver solver>
 using solver_tag = std::integral_constant<Solver, solver>;
 
@@ -88,6 +92,7 @@ void Simulation_MC_Start(
     int idx_chain ) noexcept
 try
 {
+#ifndef SPIRIT_ENABLE_LATTICE
     // Fetch correct indices and pointers
     auto [image, chain] = from_indices( state, idx_image, idx_chain );
 
@@ -130,6 +135,11 @@ try
         state->method_image[idx_image] = method;
         run_method( *method, singleshot, info );
     }
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        "Method_EMA is not implemented for spin-lattice Hamiltonians" );
+#endif
 }
 catch( ... )
 {
@@ -169,9 +179,13 @@ try
         std::shared_ptr<Engine::Method> method = [solver_type, &img = image, singleshot, n_iterations, n_iterations_log,
                                                   idx_image, idx_chain]() -> std::shared_ptr<Engine::Method>
         {
+#ifndef SPIRIT_ENABLE_LATTICE
             using Engine::Spin::Solver;
             using Engine::Spin::Method_LLG;
-
+#else
+            using Engine::SpinLattice::Solver;
+            using Engine::SpinLattice::Method_LLG;
+#endif
             // delay setting variables until after we have determined the solver
             const auto dispatcher = [&]( auto && tag )
             {
@@ -190,14 +204,16 @@ try
 
             switch( static_cast<Solver>( solver_type ) )
             {
+#ifndef SPIRIT_ENABLE_LATTICE
                 case Solver::SIB: return dispatcher( solver_tag<Solver::SIB>{} );
-                case Solver::Heun: return dispatcher( solver_tag<Solver::Heun>{} );
                 case Solver::Depondt: return dispatcher( solver_tag<Solver::Depondt>{} );
-                case Solver::RungeKutta4: return dispatcher( solver_tag<Solver::RungeKutta4>{} );
-                case Solver::VP: return dispatcher( solver_tag<Solver::VP>{} );
                 case Solver::LBFGS_OSO: return dispatcher( solver_tag<Solver::LBFGS_OSO>{} );
                 case Solver::LBFGS_Atlas: return dispatcher( solver_tag<Solver::LBFGS_Atlas>{} );
                 case Solver::VP_OSO: return dispatcher( solver_tag<Solver::VP_OSO>{} );
+#endif
+                case Solver::VP: return dispatcher( solver_tag<Solver::VP>{} );
+                case Solver::Heun: return dispatcher( solver_tag<Solver::Heun>{} );
+                case Solver::RungeKutta4: return dispatcher( solver_tag<Solver::RungeKutta4>{} );
                 default:
                     spirit_throw(
                         Utility::Exception_Classifier::Unknown_Solver, Utility::Log_Level::Warning,
@@ -262,9 +278,13 @@ try
             std::shared_ptr<Engine::Method> method = [solver_type, &chn = chain, singleshot, n_iterations,
                                                       n_iterations_log, idx_chain]() -> std::shared_ptr<Engine::Method>
             {
-                using Engine::Spin::Method_GNEB;
+#ifndef SPIRIT_ENABLE_LATTICE
                 using Engine::Spin::Solver;
-
+                using Engine::Spin::Method_GNEB;
+#else
+                using Engine::SpinLattice::Solver;
+#endif
+#ifndef SPIRIT_ENABLE_LATTICE
                 // delay setting variables until after we have determined the solver
                 const auto dispatcher = [&]( auto && tag )
                 {
@@ -279,9 +299,10 @@ try
 
                     return std::make_shared<Method_GNEB<std::decay_t<decltype( tag )>::value>>( chn, idx_chain );
                 };
-
+#endif
                 switch( static_cast<Solver>( solver_type ) )
                 {
+#ifndef SPIRIT_ENABLE_LATTICE
                     case Solver::SIB: return dispatcher( solver_tag<Solver::SIB>{} );
                     case Solver::Heun: return dispatcher( solver_tag<Solver::Heun>{} );
                     case Solver::Depondt: return dispatcher( solver_tag<Solver::Depondt>{} );
@@ -289,6 +310,7 @@ try
                     case Solver::LBFGS_OSO: return dispatcher( solver_tag<Solver::LBFGS_OSO>{} );
                     case Solver::LBFGS_Atlas: return dispatcher( solver_tag<Solver::LBFGS_Atlas>{} );
                     case Solver::VP_OSO: return dispatcher( solver_tag<Solver::VP_OSO>{} );
+#endif
                     default:
                         spirit_throw(
                             Utility::Exception_Classifier::Unknown_Solver, Utility::Log_Level::Warning,
@@ -339,13 +361,18 @@ try
         std::shared_ptr<Engine::Method> method = [solver_type, &img = image, singleshot, n_iterations, n_iterations_log,
                                                   idx_chain]() -> std::shared_ptr<Engine::Method>
         {
+#ifndef SPIRIT_ENABLE_LATTICE
             using Engine::Spin::Solver;
             using Engine::Spin::Method_MMF;
+#else
+            using Engine::SpinLattice::Solver;
+#endif
 
+#ifndef SPIRIT_ENABLE_LATTICE
             // delay setting variables until after we have determined the solver
             const auto dispatcher = [&]( auto && tag )
             {
-                std::scoped_lock _{ *img };
+                img->lock();
                 img->iteration_allowed  = true;
                 img->singleshot_allowed = singleshot;
 
@@ -353,17 +380,21 @@ try
                     img->mmf_parameters->n_iterations = n_iterations;
                 if( n_iterations_log > 0 )
                     img->mmf_parameters->n_iterations_log = n_iterations_log;
+                img->unlock();
 
                 return std::make_shared<Method_MMF<std::decay_t<decltype( tag )>::value>>( img, idx_chain );
             };
+#endif
 
             switch( static_cast<Solver>( solver_type ) )
             {
+#ifndef SPIRIT_ENABLE_LATTICE
                 case Solver::SIB: return dispatcher( solver_tag<Solver::SIB>{} );
                 case Solver::Heun: return dispatcher( solver_tag<Solver::Heun>{} );
                 case Solver::Depondt: return dispatcher( solver_tag<Solver::Depondt>{} );
                 // case Solver::NCG: return dispatcher( solver_tag<Solver::NCG>{} );
                 case Solver::VP: return dispatcher( solver_tag<Solver::VP>{} );
+#endif
                 default:
                     spirit_throw(
                         Utility::Exception_Classifier::Unknown_Solver, Utility::Log_Level::Warning,
@@ -409,6 +440,7 @@ try
     }
     else
     {
+#ifndef SPIRIT_ENABLE_LATTICE
         // We are not iterating, so we create the Method and call Iterate
         std::shared_ptr<Engine::Method> method = [&, &img = image]
         {
@@ -427,6 +459,11 @@ try
         state->method_image[idx_image] = method;
 
         run_method( *method, singleshot, info );
+#else
+        spirit_throw(
+            Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+            "Method_EMA is not implemented for spin-lattice Hamiltonians" );
+#endif
     }
 }
 catch( ... )

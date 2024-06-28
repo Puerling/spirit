@@ -2,6 +2,7 @@
 #include <engine/Neighbours.hpp>
 #include <engine/Vectormath.hpp>
 #include <engine/spin/Hamiltonian.hpp>
+#include <engine/spin_lattice/Hamiltonian.hpp>
 #include <io/IO.hpp>
 
 #include <algorithm>
@@ -119,11 +120,23 @@ catch( ... )
     spirit_rethrow( "Spin_System::UpdateEnergy failed" );
 }
 
-template<typename Hamiltonian>
-void Spin_System<Hamiltonian>::UpdateEffectiveField()
+template<>
+void Spin_System<Engine::Spin::HamiltonianVariant>::UpdateEffectiveField()
 try
 {
     this->hamiltonian->Gradient( *this->state, this->M.effective_field );
+    Engine::Vectormath::scale( this->M.effective_field, -1 );
+}
+catch( ... )
+{
+    spirit_rethrow( "Spin_System::UpdateEffectiveField failed" );
+}
+
+template<>
+void Spin_System<Engine::SpinLattice::HamiltonianVariant>::UpdateEffectiveField()
+try
+{
+    this->hamiltonian->Gradient<Engine::SpinLattice::Field::Spin>( *this->state, this->M.effective_field );
     Engine::Vectormath::scale( this->M.effective_field, -1 );
 }
 catch( ... )
@@ -156,3 +169,4 @@ catch( ... )
 } // namespace Data
 
 template class Data::Spin_System<Engine::Spin::HamiltonianVariant>;
+template class Data::Spin_System<Engine::SpinLattice::HamiltonianVariant>;

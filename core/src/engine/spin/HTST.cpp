@@ -32,7 +32,6 @@ namespace HTST
 
 // Note the two images should correspond to one minimum and one saddle point
 // Non-extremal images may yield incorrect Hessians and thus incorrect results
-template<>
 void Calculate( Data::HTST_Info<system_t> & htst_info, int n_eigenmodes_keep )
 {
     Log( Utility::Log_Level::All, Utility::Log_Sender::HTST, "---- Prefactor calculation" );

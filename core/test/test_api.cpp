@@ -203,3 +203,72 @@ TEST_CASE( "Quantities", "[quantities]" )
         }
     }
 }
+
+// NOTE: this currently only tests whether these functions that are expected to be disabled can be safely called when in
+// the "wrong" build. The exception mechanism in place makes it difficult to check whether the state is not changed when
+// calling the API function in question
+TEST_CASE( "Test whether spin-lattice functions are disabled between compile paths", "[api]" )
+{
+    auto state = std::shared_ptr<State>( State_Setup(), State_Delete );
+
+    SECTION( "Chain" )
+    {
+#ifdef SPIRIT_ENABLE_LATTICE
+        CHECK_NOTHROW( Chain_Setup_Data( state.get() ) );
+        CHECK_NOTHROW( Chain_Update_Data( state.get() ) );
+#endif
+    }
+
+    SECTION( "Hamiltonian" )
+    {
+#ifdef SPIRIT_ENABLE_LATTICE
+        CHECK_NOTHROW( Hamiltonian_Write_Hessian( state.get(), "" ) );
+#endif
+    }
+
+    SECTION( "IO" )
+    {
+#ifdef SPIRIT_ENABLE_LATTICE
+        CHECK_NOTHROW( IO_Eigenmodes_Read( state.get(), "" ) );
+        CHECK_NOTHROW( IO_Eigenmodes_Write( state.get(), "" ) );
+#endif
+    }
+
+    SECTION( "Quantities" )
+    {
+#ifdef SPIRIT_ENABLE_LATTICE
+        const int nos = Geometry_Get_NOS( state.get() );
+        scalarfield f_grad( 3 * nos );
+        scalarfield eval( 3 * nos );
+        scalarfield mode( 3 * nos );
+        scalarfield forces( 3 * nos );
+        CHECK_NOTHROW( Quantity_Get_Grad_Force_MinimumMode(
+            state.get(), f_grad.data(), eval.data(), mode.data(), forces.data() ) );
+#endif
+    }
+
+    SECTION( "Simulation" )
+    {
+        // TODO: make passing an invalid solver to a simulation a recoverable error
+#if defined( SPIRIT_ENABLE_LATTICE ) && 0
+        CHECK_NOTHROW( Simulation_MC_Start( state.get() ) );
+        for( int i = -1; i < 100; ++i )
+        {
+            CHECK_NOTHROW( Simulation_GNEB_Start( state.get(), i ) );
+            CHECK_NOTHROW( Simulation_MMF_Start( state.get(), i ) );
+            CHECK_NOTHROW( Simulation_EMA_Start( state.get(), i ) );
+        }
+#endif
+    }
+
+    SECTION( "System" )
+    {
+#ifdef SPIRIT_ENABLE_LATTICE
+        CHECK_NOTHROW( System_Update_Eigenmodes( state.get() ) );
+#else
+        [[maybe_unused]] scalar *displacement = nullptr, *momentum = nullptr;
+        CHECK_NOTHROW( displacement = System_Get_Lattice_Displacement( state.get() ) );
+        CHECK_NOTHROW( momentum = System_Get_Lattice_Momentum( state.get() ) );
+#endif
+    }
+}

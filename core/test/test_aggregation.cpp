@@ -45,20 +45,24 @@ TEST_CASE( "Ensure that Hamiltonian is really just an aggregator", "[aggregation
 {
     // Hamiltonians to be tested
     std::vector<const char *> hamiltonian_input_files{
+#ifndef SPIRIT_ENABLE_LATTICE
         "core/test/input/fd_gaussian.cfg",
         "core/test/input/fd_pairs.cfg",
         "core/test/input/fd_neighbours.cfg",
+#else
+        "core/test/input/lattice_spring.cfg"
+#endif
     };
 
     for( const auto * input_file : hamiltonian_input_files )
     {
         INFO( " Testing" << input_file );
 
-        auto state = std::shared_ptr<State>( State_Setup( input_file ), State_Delete );
-        Configuration_Random( state.get() );
-        const auto & spins = *state->active_image->state;
-        auto & hamiltonian = state->active_image->hamiltonian;
-        auto nos           = get<Field::Spin>( spins ).size();
+        auto simulation_state = std::shared_ptr<State>( State_Setup( input_file ), State_Delete );
+        Configuration_Random( simulation_state.get() );
+        const auto & state = *simulation_state->active_image->state;
+        auto & hamiltonian = simulation_state->active_image->hamiltonian;
+        auto nos           = get<Field::Spin>( state ).size();
 
         if( hamiltonian->active_count() == 0 )
         {
@@ -69,10 +73,10 @@ TEST_CASE( "Ensure that Hamiltonian is really just an aggregator", "[aggregation
         auto aggregator          = [&active_interactions]( const auto init, const auto & f )
         { return std::accumulate( std::begin( active_interactions ), std::end( active_interactions ), init, f ); };
 
-        scalar energy_hamiltonian = hamiltonian->Energy( spins );
+        scalar energy_hamiltonian = hamiltonian->Energy( state );
         scalar energy_aggregated  = aggregator(
-            0.0, [&spins]( const scalar v, const auto & interaction ) -> scalar
-            { return v + interaction->Energy( spins ); } );
+            0.0, [&state]( const scalar v, const auto & interaction ) -> scalar
+            { return v + interaction->Energy( state ); } );
 
         INFO( "Hamiltonian::Energy" )
         INFO( "[total], epsilon = " << epsilon_2 << "\n" );
@@ -81,14 +85,14 @@ TEST_CASE( "Ensure that Hamiltonian is really just an aggregator", "[aggregation
         REQUIRE_THAT( energy_hamiltonian, WithinAbs( energy_aggregated, epsilon_2 ) );
 
         scalarfield energy_per_spin_hamiltonian{}; // resize and clear should be handled by the hamiltonian
-        hamiltonian->Energy_per_Spin( spins, energy_per_spin_hamiltonian );
+        hamiltonian->Energy_per_Spin( state, energy_per_spin_hamiltonian );
         scalarfield energy_per_spin_aggregated = aggregator(
             scalarfield( nos, 0 ),
-            [&spins]( const scalarfield & v, const auto & interaction ) -> scalarfield
+            [&state]( const scalarfield & v, const auto & interaction ) -> scalarfield
             {
-                const auto nos       = get<Field::Spin>( spins ).size();
+                const auto nos       = get<Field::Spin>( state ).size();
                 auto energy_per_spin = scalarfield( nos, 0 );
-                interaction->Energy_per_Spin( spins, energy_per_spin );
+                interaction->Energy_per_Spin( state, energy_per_spin );
 #pragma omp parallel for
                 for( std::size_t i = 0; i < nos; ++i )
                     energy_per_spin[i] += v[i];
@@ -96,7 +100,7 @@ TEST_CASE( "Ensure that Hamiltonian is really just an aggregator", "[aggregation
                 return energy_per_spin;
             } );
 
-        for( int i = 0; i < state->nos; i++ )
+        for( int i = 0; i < simulation_state->nos; i++ )
         {
             INFO( "Hamiltonian::Energy_per_Spin" )
             INFO( "i = " << i << ", epsilon = " << epsilon_2 << "\n" );
@@ -105,19 +109,20 @@ TEST_CASE( "Ensure that Hamiltonian is really just an aggregator", "[aggregation
             REQUIRE_THAT( energy_per_spin_hamiltonian[i], WithinAbs( energy_per_spin_aggregated[i], epsilon_2 ) );
         }
 
-        vectorfield gradient_hamiltonian{}; // resize and clear should be handled by the hamiltonian
-        hamiltonian->Gradient( spins, gradient_hamiltonian );
+#ifndef SPIRIT_ENABLE_LATTICE
+        auto gradient_hamiltonian = vectorfield( 0 ); // resize and clear should be handled by the hamiltonian
+        hamiltonian->Gradient( state, gradient_hamiltonian );
         vectorfield gradient_aggregated = aggregator(
             vectorfield( nos, Vector3::Zero() ),
-            [&spins]( const vectorfield & v, const auto & interaction ) -> vectorfield
+            [&state]( const vectorfield & v, const auto & interaction ) -> vectorfield
             {
-                auto gradient = vectorfield( get<Field::Spin>( spins ).size(), Vector3::Zero() );
-                interaction->Gradient( spins, gradient );
+                auto gradient = vectorfield( get<Field::Spin>( state ).size(), Vector3::Zero() );
+                interaction->Gradient( state, gradient );
                 Engine::Vectormath::add_c_a( 1.0, v, gradient );
                 return gradient;
             } );
 
-        for( int i = 0; i < state->nos; i++ )
+        for( int i = 0; i < simulation_state->nos; ++i )
         {
             INFO( "Hamiltonian::Gradient" )
             INFO( "i = " << i << ", epsilon = " << epsilon_2 << "\n" );
@@ -125,12 +130,56 @@ TEST_CASE( "Ensure that Hamiltonian is really just an aggregator", "[aggregation
             INFO( "Gradient (aggregated) = " << gradient_aggregated[i] << "\n" );
             REQUIRE( gradient_hamiltonian[i].isApprox( gradient_aggregated[i], epsilon_2 ) );
         }
+#else
+        auto gradient_hamiltonian
+            = Engine::make_state<Engine::StateType>( 0 ); // resize and clear should be handled by the hamiltonian
+        hamiltonian->Gradient( state, gradient_hamiltonian );
+        const Engine::SpinLattice::quantity<vectorfield> gradient_aggregated = aggregator(
+            Engine::SpinLattice::make_quantity( vectorfield( nos, Vector3::Zero() ) ),
+            [&state]( const Engine::SpinLattice::quantity<vectorfield> & v, const auto & interaction )
+                -> Engine::SpinLattice::quantity<vectorfield>
+            {
+                auto gradient = Engine::SpinLattice::make_quantity(
+                    vectorfield( state.spin.size(), Vector3::Zero() ),
+                    vectorfield( state.displacement.size(), Vector3::Zero() ),
+                    vectorfield( state.momentum.size(), Vector3::Zero() ) );
+                interaction->Gradient( state, gradient );
+                Engine::Vectormath::add_c_a( 1.0, v.spin, gradient.spin );
+                Engine::Vectormath::add_c_a( 1.0, v.displacement, gradient.displacement );
+                Engine::Vectormath::add_c_a( 1.0, v.momentum, gradient.momentum );
+                return gradient;
+            } );
+
+        {
+            const auto test = [nos](
+                                  const std::string_view label, const vectorfield & grad_hamiltonian,
+                                  const vectorfield & grad_aggregated )
+            {
+                for( unsigned int i = 0; i < nos; i++ )
+                {
+                    INFO( label << ( label.empty() ? "" : "\n" ) );
+                    INFO( "i = " << i << ", epsilon = " << epsilon_2 << "\n" );
+                    INFO( "Gradient (Hamiltonian) = " << grad_hamiltonian[i].transpose() << "\n" );
+                    INFO( "Gradient (aggregated)  = " << grad_aggregated[i].transpose() << "\n" );
+                    REQUIRE( grad_hamiltonian[i].isApprox( grad_aggregated[i], epsilon_2 ) );
+                }
+            };
+
+            test( "Hamiltonian::Gradient<Field::Spin>", gradient_hamiltonian.spin, gradient_aggregated.spin );
+            test(
+                "Hamiltonian::Gradient<Field::Displacement>", gradient_hamiltonian.displacement,
+                gradient_aggregated.displacement );
+            test(
+                "Hamiltonian::Gradient<Field::Momentum>", gradient_hamiltonian.momentum, gradient_aggregated.momentum );
+        }
+#endif
 
         scalar energy_combined_hamiltonian = 0;
-        vectorfield gradient_combined_hamiltonian{};
-        hamiltonian->Gradient_and_Energy( spins, gradient_combined_hamiltonian, energy_combined_hamiltonian );
+        auto gradient_combined_hamiltonian = Engine::make_state<Engine::StateType>( 0 );
+        hamiltonian->Gradient_and_Energy( state, gradient_combined_hamiltonian, energy_combined_hamiltonian );
 
-        for( int i = 0; i < state->nos; i++ )
+#ifndef SPIRIT_ENABLE_LATTICE
+        for( int i = 0; i < simulation_state->nos; ++i )
         {
             INFO( "Hamiltonian::Gradient_and_Energy" )
             INFO( "i = " << i << ", epsilon = " << epsilon_2 << "\n" );
@@ -138,7 +187,33 @@ TEST_CASE( "Ensure that Hamiltonian is really just an aggregator", "[aggregation
             INFO( "Gradient (aggregated) = " << gradient_aggregated[i] << "\n" );
             REQUIRE( gradient_combined_hamiltonian[i].isApprox( gradient_aggregated[i], epsilon_2 ) );
         }
+#else
+        {
+            const auto test = [nos](
+                                  const std::string_view label, const vectorfield & grad_hamiltonian,
+                                  const vectorfield & grad_aggregated )
+            {
+                for( unsigned int i = 0; i < nos; i++ )
+                {
+                    INFO( label << ( label.empty() ? "" : "\n" ) );
+                    INFO( "i = " << i << ", epsilon = " << epsilon_2 << "\n" );
+                    INFO( "Gradient (combined)    = " << grad_hamiltonian[i].transpose() << "\n" );
+                    INFO( "Gradient (aggregated)  = " << grad_aggregated[i].transpose() << "\n" );
+                    REQUIRE( grad_hamiltonian[i].isApprox( grad_aggregated[i], epsilon_2 ) );
+                }
+            };
+            test(
+                "Hamiltonian::Gradient_and_Energy<Field::Spin>", gradient_combined_hamiltonian.spin,
+                gradient_aggregated.spin );
+            test(
+                "Hamiltonian::Gradient_and_Energy<Field::Displacement>", gradient_combined_hamiltonian.displacement,
+                gradient_aggregated.displacement );
+            test(
+                "Hamiltonian::Gradient_and_Energy<Field::Momentum>", gradient_combined_hamiltonian.momentum,
+                gradient_aggregated.momentum );
+        }
 
+#endif
         INFO( "Hamiltonian::Gradient_and_Energy" )
         INFO( "[total], epsilon = " << epsilon_2 << "\n" );
         INFO( "Energy (combined)   = " << energy_combined_hamiltonian << "\n" );

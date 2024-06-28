@@ -1,3 +1,4 @@
+#ifndef SPIRIT_ENABLE_LATTICE
 #include <Spirit/Configurations.h>
 #include <Spirit/Constants.h>
 #include <Spirit/Geometry.h>
@@ -415,3 +416,4 @@ TEST_CASE( "Biaxial anisotropy", "[anisotropy]" )
         }
     }
 }
+#endif

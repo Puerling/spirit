@@ -809,6 +809,7 @@ void Geometry::calculateGeometryType()
 
 void Geometry::Apply_Pinning( vectorfield & vf ) const
 {
+    // TODO(spin-lattice): decide how pinning should be implemented for spin-lattice systems
 #if defined( SPIRIT_ENABLE_PINNING )
     std::int64_t N     = this->n_cell_atoms;
     std::int64_t Na    = this->n_cells[0];

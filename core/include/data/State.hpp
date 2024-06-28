@@ -6,6 +6,8 @@
 #include <data/Spin_System_Chain.hpp>
 #include <engine/spin/Hamiltonian.hpp>
 #include <engine/spin/Method.hpp>
+#include <engine/spin_lattice/Hamiltonian.hpp>
+#include <engine/spin_lattice/Method.hpp>
 #include <utility/Exception.hpp>
 
 #include <fmt/chrono.h>
@@ -24,10 +26,17 @@
  */
 struct State
 {
+#ifndef SPIRIT_ENABLE_LATTICE
     using hamiltonian_t = Engine::Spin::hamiltonian_t;
     using state_t       = typename hamiltonian_t::state_t;
     using chain_t       = Engine::Spin::chain_t;
     using system_t      = Engine::Spin::system_t;
+#else
+    using hamiltonian_t = Engine::SpinLattice::hamiltonian_t;
+    using state_t       = typename hamiltonian_t::state_t;
+    using chain_t       = Engine::SpinLattice::chain_t;
+    using system_t      = Engine::SpinLattice::system_t;
+#endif
 
     // Currently "active" chain
     std::shared_ptr<chain_t> chain;

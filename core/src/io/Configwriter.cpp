@@ -454,4 +454,36 @@ void Hamiltonian_to_Config(
     append_to_file( config, config_file );
 }
 
+namespace
+{
+
+void Hamiltonian_Lattice_to_Config(
+    const std::string & config_file, const std::shared_ptr<Engine::SpinLattice::HamiltonianVariant> hamiltonian )
+{
+    Log( Utility::Log_Level::Error, Utility::Log_Sender::IO, "Hamiltonian_Lattice_to_Config is not yet implemented" );
+}
+
+} // namespace
+
+void Hamiltonian_to_Config(
+    const std::string & config_file, const std::shared_ptr<Engine::SpinLattice::HamiltonianVariant> hamiltonian )
+{
+    std::string config = "";
+    config += "################### Spin-Lattice Hamiltonian ##################\n";
+    std::string name;
+    if( hamiltonian->Name() == "Lattice" )
+        name = "lattice";
+    config += fmt::format( "{:<25} {}\n", "hamiltonian", name );
+    config += []( const auto & bc ) {
+        return fmt::format( "{:<25} {} {} {}\n", "boundary_conditions", bc[0], bc[1], bc[2] );
+    }( hamiltonian->get_boundary_conditions() );
+    append_to_file( config, config_file );
+
+    if( hamiltonian->Name() == "Lattice" )
+        Hamiltonian_Lattice_to_Config( config_file, hamiltonian );
+
+    config = "################# End Spin-Lattice Hamiltonian ################";
+    append_to_file( config, config_file );
+}
+
 } // namespace IO

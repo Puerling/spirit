@@ -1,3 +1,4 @@
+#ifndef SPIRIT_ENABLE_LATTICE
 #include <Spirit/Chain.h>
 #include <Spirit/Configurations.h>
 #include <Spirit/Geometry.h>
@@ -156,3 +157,6 @@ TEST_CASE( "Solvers should find Skyrmion collapse barrier with GNEB method", "[s
             REQUIRE_THAT( magnetization_sp[dim], within_digits( magnetization_sp_expected[dim], 6 ) );
     }
 }
+#else
+// TODO(spin-lattice): write solver tests for the lattice case
+#endif

@@ -243,4 +243,138 @@ Hamiltonian_from_Config( const std::string & config_file_name, Data::Geometry ge
     return hamiltonian;
 }
 
+namespace
+{
+
+std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_Lattice_Spring_from_Config(
+    const std::string & config_file_name, Data::Geometry geometry, intfield boundary_conditions )
+{
+    Log( Log_Level::Debug, Log_Sender::IO, "Hamiltonian_Lattice (spring): building" );
+    // pull in the relevant namespaces and type we want to build
+    namespace Interaction = Engine::SpinLattice::Interaction;
+    using Engine::SpinLattice::HamiltonianVariant;
+
+    std::vector<std::string> parameter_log;
+    parameter_log.emplace_back( "Hamiltonian Lattice (spring):" );
+    parameter_log.emplace_back( fmt::format(
+        "    {:<21} = {} {} {}", "boundary conditions", boundary_conditions[0], boundary_conditions[1],
+        boundary_conditions[2] ) );
+
+    //-------------- Insert default values here -----------------------------
+    Interaction::Lattice_Spring_Potential::Data lattice_potential{};
+    lattice_potential.pairs      = pairfield( 0 );
+    lattice_potential.magnitudes = scalarfield( 0 );
+
+    Interaction::Lattice_Kinetic::Data lattice_kinetic{};
+    lattice_kinetic.magnitudes = scalarfield( 0 );
+    lattice_kinetic.normals    = vectorfield( 0 );
+
+    //------------------------------- Parser --------------------------------
+    if( !config_file_name.empty() )
+    {
+        Lattice_Kinetic_from_Config( config_file_name, geometry, parameter_log, lattice_kinetic );
+
+        Lattice_Spring_Potential_from_Config( config_file_name, geometry, parameter_log, lattice_potential );
+    }
+    else
+        Log( Log_Level::Parameter, Log_Sender::IO, "Hamiltonian_Lattice: Using default configuration!" );
+
+    Log( Log_Level::Parameter, Log_Sender::IO, parameter_log );
+
+    auto hamiltonian = std::make_unique<HamiltonianVariant>( HamiltonianVariant::Lattice_Spring(
+        std::move( geometry ), std::move( boundary_conditions ), std::move( lattice_kinetic ),
+        std::move( lattice_potential ) ) );
+
+    assert( hamiltonian->Name() == "Lattice (spring)" );
+    Log( Log_Level::Debug, Log_Sender::IO, fmt::format( "Hamiltonian_{}: built", hamiltonian->Name() ) );
+    return hamiltonian;
+}
+
+std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_Lattice_Harmonic_from_Config(
+    const std::string & config_file_name, Data::Geometry geometry, intfield boundary_conditions )
+{
+    Log( Log_Level::Debug, Log_Sender::IO, "Hamiltonian_Lattice (harmonic): building" );
+    // pull in the relevant namespaces and type we want to build
+    namespace Interaction = Engine::SpinLattice::Interaction;
+    using Engine::SpinLattice::HamiltonianVariant;
+
+    std::vector<std::string> parameter_log;
+    parameter_log.emplace_back( "Hamiltonian Lattice (harmonic):" );
+    parameter_log.emplace_back( fmt::format(
+        "    {:<21} = {} {} {}", "boundary conditions", boundary_conditions[0], boundary_conditions[1],
+        boundary_conditions[2] ) );
+
+    //-------------- Insert default values here -----------------------------
+    Interaction::Lattice_Harmonic_Potential::Data lattice_potential{};
+    lattice_potential.pairs      = pairfield( 0 );
+    lattice_potential.normals    = vectorfield( 0 );
+    lattice_potential.magnitudes = scalarfield( 0 );
+
+    Interaction::Lattice_Kinetic::Data lattice_kinetic{};
+    lattice_kinetic.magnitudes = scalarfield( 0 );
+    lattice_kinetic.normals    = vectorfield( 0 );
+
+    //------------------------------- Parser --------------------------------
+    if( !config_file_name.empty() )
+    {
+        Lattice_Kinetic_from_Config( config_file_name, geometry, parameter_log, lattice_kinetic );
+
+        Lattice_Harmonic_Potential_from_Config( config_file_name, geometry, parameter_log, lattice_potential );
+    }
+    else
+        Log( Log_Level::Parameter, Log_Sender::IO, "Hamiltonian_Lattice (harmonic): Using default configuration!" );
+
+    Log( Log_Level::Parameter, Log_Sender::IO, parameter_log );
+
+    auto hamiltonian = std::make_unique<HamiltonianVariant>( HamiltonianVariant::Lattice_Harmonic(
+        std::move( geometry ), std::move( boundary_conditions ), std::move( lattice_kinetic ),
+        std::move( lattice_potential ) ) );
+
+    assert( hamiltonian->Name() == "Lattice (harmonic)" );
+    Log( Log_Level::Debug, Log_Sender::IO, fmt::format( "Hamiltonian_{}: built", hamiltonian->Name() ) );
+    return hamiltonian;
+}
+
+} // namespace
+
+template<>
+std::unique_ptr<Engine::SpinLattice::HamiltonianVariant>
+Hamiltonian_from_Config( const std::string & config_file_name, Data::Geometry geometry, intfield boundary_conditions )
+{
+    //------------------------------- Parser --------------------------------
+    Log( Log_Level::Debug, Log_Sender::IO, "Hamiltonian: building" );
+
+    const std::string hamiltonian_type = Hamiltonian_Type_from_Config( config_file_name, "lattice_spring" );
+
+    std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> hamiltonian;
+    try
+    {
+        if( hamiltonian_type == "lattice_spring" )
+        {
+            hamiltonian = Hamiltonian_Lattice_Spring_from_Config(
+                config_file_name, std::move( geometry ), std::move( boundary_conditions ) );
+        }
+        else if( hamiltonian_type == "lattice_harmonic" )
+        {
+            hamiltonian = Hamiltonian_Lattice_Harmonic_from_Config(
+                config_file_name, std::move( geometry ), std::move( boundary_conditions ) );
+        }
+        else
+        {
+            spirit_throw(
+                Utility::Exception_Classifier::System_not_Initialized, Log_Level::Severe,
+                fmt::format( "Hamiltonian: Invalid type \"{}\"", hamiltonian_type ) );
+        }
+    }
+    catch( ... )
+    {
+        spirit_handle_exception_core(
+            fmt::format( "Unable to initialize Hamiltonian from config file \"{}\"", config_file_name ) );
+    }
+    // Return
+    Log( Log_Level::Debug, Log_Sender::IO,
+         fmt::format( "Hamiltonian: built hamiltonian of type: {}", hamiltonian_type ) );
+    return hamiltonian;
+}
+
 } // namespace IO

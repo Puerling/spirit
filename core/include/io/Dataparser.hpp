@@ -38,8 +38,38 @@ void Read_NonOVF_System_Configuration(
 
 } // namespace Spin
 
+namespace SpinLattice
+{
+
+using StateType = Engine::SpinLattice::StateType;
+
+namespace State
+{
+
+static constexpr const int valuedim           = 9;
+static constexpr std::string_view valuelabels = "spin_x spin_y spin_z "
+                                                "displacement_x displacement_y displacement_z "
+                                                "momentum_x momentum_y momentum_z";
+static constexpr std::string_view valueunits  = "none none none "
+                                                "none none none "
+                                                "none none none";
+
+class Buffer;
+
+} // namespace State
+
+void Read_NonOVF_System_Configuration(
+    StateType & state, Data::Geometry & geometry, const int nos, const int idx_image_infile, const std::string & file );
+
+} // namespace SpinLattice
+
+#ifdef SPIRIT_ENABLE_LATTICE
+namespace State = IO::SpinLattice::State;
+using IO::SpinLattice::Read_NonOVF_System_Configuration;
+#else
 namespace State = IO::Spin::State;
 using IO::Spin::Read_NonOVF_System_Configuration;
+#endif
 
 void Check_NonOVF_Chain_Configuration(
     std::shared_ptr<::State::chain_t> chain, const std::string & file, int start_image_infile, int end_image_infile,

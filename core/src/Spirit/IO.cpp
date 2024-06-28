@@ -258,8 +258,14 @@ try
                     idx_image_infile + 1, file.n_segments, filename, IO::State::valuedim, segment.valuedim ) );
         }
 
+#ifdef SPIRIT_ENABLE_LATTICE
+        IO::SpinLattice::State::Buffer buffer( image->nos );
+        file.read_segment_data( idx_image_infile, segment, buffer.data() );
+        copy( buffer, system_state );
+#else
         // Read data
         file.read_segment_data( idx_image_infile, segment, system_state[0].data() );
+#endif
         using Engine::Field;
         using Engine::get;
 
@@ -611,8 +617,15 @@ try
                             segment.valuedim ) );
                 }
 
+#ifndef SPIRIT_ENABLE_LATTICE
                 // Read data
                 file.read_segment_data( start_image_infile, segment, system_state[0].data() );
+#else
+                // Read data
+                IO::SpinLattice::State::Buffer buffer( image->nos );
+                file.read_segment_data( start_image_infile, segment, buffer.data() );
+                copy( buffer, system_state );
+#endif
                 auto & spins = Engine::get<Engine::Field::Spin>( system_state );
                 for( unsigned int ispin = 0; ispin < spins.size(); ++ispin )
                 {
@@ -737,14 +750,23 @@ try
                 segment.valueunits      = strdup( IO::State::valueunits.data() );
 
                 // Open and write
+#ifndef SPIRIT_ENABLE_LATTICE
                 const IO::State::Buffer buffer( system_state );
+#else
+                IO::State::Buffer buffer( system_state );
+#endif
                 IO::OVF_File( filename ).write_segment( segment, buffer.data(), format );
 
                 for( int i = 1; i < chain->noi; i++ )
                 {
                     comment_str     = fmt::format( "Image {} of {}. {}", i + 1, chain->noi, comment );
                     segment.comment = strdup( comment_str.c_str() );
+#ifndef SPIRIT_ENABLE_LATTICE
                     file.append_segment( segment, IO::State::Buffer( *images[i]->state ).data(), int( fileformat ) );
+#else
+                    copy( *images[i]->state, buffer );
+                    file.append_segment( segment, buffer.data(), int( fileformat ) );
+#endif
                 }
 
                 break;
@@ -1047,7 +1069,7 @@ catch( ... )
 void IO_Eigenmodes_Read( State * state, const char * filename, int idx_image_inchain, int idx_chain ) noexcept
 try
 {
-
+#ifndef SPIRIT_ENABLE_LATTICE
     // Fetch correct indices and pointers
     auto [image, chain] = from_indices( state, idx_image_inchain, idx_chain );
 
@@ -1169,6 +1191,11 @@ try
         spirit_handle_exception_api( idx_image_inchain, idx_chain );
     }
     image->unlock();
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        "System_Update_Eigenmodes() is not implemented for spin-lattice Hamiltonians" );
+#endif
 }
 catch( ... )
 {
@@ -1179,7 +1206,7 @@ void IO_Eigenmodes_Write(
     State * state, const char * filename, int format, const char * comment, int idx_image, int idx_chain ) noexcept
 try
 {
-
+#ifndef SPIRIT_ENABLE_LATTICE
     // Fetch correct indices and pointers
     auto [image, chain] = from_indices( state, idx_image, idx_chain );
 
@@ -1273,6 +1300,11 @@ try
         spirit_handle_exception_api( idx_image, idx_chain );
     }
     image->unlock();
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        "System_Update_Eigenmodes() is not implemented for spin-lattice Hamiltonians" );
+#endif
 }
 catch( ... )
 {

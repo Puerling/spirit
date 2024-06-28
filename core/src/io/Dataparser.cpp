@@ -60,6 +60,50 @@ void Read_NonOVF_System_Configuration(
 
 } // namespace Spin
 
+namespace SpinLattice
+{
+
+// Reads a non-OVF spins-lattice file with plain text and discarding any headers starting with '#'
+void Read_NonOVF_System_Configuration(
+    Engine::SpinLattice::StateType & state, Data::Geometry & geometry, const int nos, const int idx_image_infile,
+    const std::string & file )
+{
+    IO::Filter_File_Handle file_handle( file, "#" );
+
+    // Jump to the specified image in the file
+    for( int i = 0; i < ( nos * idx_image_infile ); i++ )
+        file_handle.GetLine();
+
+    for( int i = 0; i < nos && file_handle.GetLine( "," ); i++ )
+    {
+        file_handle >> state.spin[i][0];
+        file_handle >> state.spin[i][1];
+        file_handle >> state.spin[i][2];
+
+        if( state.spin[i].norm() < 1e-5 )
+        {
+            state.spin[i] = { 0, 0, 1 };
+            // In case of spin vector close to zero we have a vacancy
+#ifdef SPIRIT_ENABLE_DEFECTS
+            geometry.atom_types[i] = -1;
+#endif
+        }
+
+        file_handle >> state.displacement[i][0];
+        file_handle >> state.displacement[i][1];
+        file_handle >> state.displacement[i][2];
+
+        file_handle >> state.momentum[i][0];
+        file_handle >> state.momentum[i][1];
+        file_handle >> state.momentum[i][2];
+    }
+
+    // normalize read in spins
+    Engine::Vectormath::normalize_vectors( state.spin );
+}
+
+} // namespace SpinLattice
+
 void Check_NonOVF_Chain_Configuration(
     std::shared_ptr<::State::chain_t> chain, const std::string & file, int start_image_infile, int end_image_infile,
     const int insert_idx, int & noi_to_add, int & noi_to_read, const int idx_chain )

@@ -18,6 +18,7 @@ option( SPIRIT_BUILD_FOR_CXX    "Build the static library for C++ applications" 
 ### Feature switches for Spirit
 option( SPIRIT_ENABLE_PINNING   "Enable pinning individual or rows of spins."            OFF )
 option( SPIRIT_ENABLE_DEFECTS   "Enable defects and disorder in the lattice."            OFF )
+option( SPIRIT_ENABLE_LATTICE   "Enable lattice vibrational degrees of freedom."         OFF )
 ### Options for Spirit
 option( SPIRIT_BUILD_TEST       "Build unit tests for the Spirit library."               ON  )
 option( SPIRIT_TEST_COVERAGE    "Build in debug with special flags for coverage checks." OFF )
@@ -357,6 +358,8 @@ set( HEADER_SPIRIT_ENGINE_COMMON )
 set( HEADER_SPIRIT_ENGINE_COMMON_INTERACTION )
 set( HEADER_SPIRIT_ENGINE_SPIN )
 set( HEADER_SPIRIT_ENGINE_SPIN_INTERACTION )
+set( HEADER_SPIRIT_ENGINE_SPINLATTICE )
+set( HEADER_SPIRIT_ENGINE_SPINLATTICE_INTERACTION )
 set( HEADER_SPIRIT_IO )
 set( HEADER_SPIRIT_IO_HAMILTONIAN )
 set( HEADER_SPIRIT_UTILITY )
@@ -369,6 +372,8 @@ set( SOURCE_SPIRIT_ENGINE_COMMON )
 set( SOURCE_SPIRIT_ENGINE_COMMON_INTERACTION )
 set( SOURCE_SPIRIT_ENGINE_SPIN )
 set( SOURCE_SPIRIT_ENGINE_SPIN_INTERACTION )
+set( HEADER_SPIRIT_ENGINE_SPINLATTICE )
+set( HEADER_SPIRIT_ENGINE_SPINLATTICE_INTERACTION )
 set( SOURCE_SPIRIT_IO )
 set( SOURCE_SPIRIT_IO_HAMILTONIAN )
 set( SOURCE_SPIRIT_UTILITY )
@@ -386,6 +391,8 @@ set( SPIRIT_CPP_HEADERS
     ${HEADER_SPIRIT_ENGINE_COMMON}
     ${HEADER_SPIRIT_ENGINE_SPIN_INTERACTION}
     ${HEADER_SPIRIT_ENGINE_SPIN}
+    ${HEADER_SPIRIT_ENGINE_SPINLATTICE_INTERACTION}
+    ${HEADER_SPIRIT_ENGINE_SPINLATTICE}
     ${HEADER_SPIRIT_ENGINE}
     ${HEADER_SPIRIT}
     ${HEADER_SPIRIT_IO_HAMILTONIAN}
@@ -399,6 +406,8 @@ set( SPIRIT_CPP_SOURCES
     ${SOURCE_SPIRIT_ENGINE_COMMON_INTERACTION}
     ${SOURCE_SPIRIT_ENGINE_SPIN_INTERACTION}
     ${SOURCE_SPIRIT_ENGINE_SPIN}
+    ${SOURCE_SPIRIT_ENGINE_SPINLATTICE_INTERACTION}
+    ${SOURCE_SPIRIT_ENGINE_SPINLATTICE}
     ${SOURCE_SPIRIT_ENGINE}
     ${SOURCE_SPIRIT}
     ${SOURCE_SPIRIT_IO}
@@ -479,6 +488,9 @@ endif()
 if( SPIRIT_ENABLE_PINNING )
     set( SPIRIT_COMPILE_DEFINITIONS ${SPIRIT_COMPILE_DEFINITIONS} -DSPIRIT_ENABLE_PINNING )
 endif()
+if( SPIRIT_ENABLE_LATTICE )
+    set( SPIRIT_COMPILE_DEFINITIONS ${SPIRIT_COMPILE_DEFINITIONS} -DSPIRIT_ENABLE_LATTICE )
+endif()
 if( SPIRIT_USE_THREADS )
     set( SPIRIT_COMPILE_DEFINITIONS ${SPIRIT_COMPILE_DEFINITIONS} -DSPIRIT_USE_THREADS )
 endif()
@@ -552,13 +564,17 @@ if( SPIRIT_BUILD_FOR_CXX OR SPIRIT_BUILD_FOR_JS )
         add_framework_test( test_mmath              test/test_manifoldmath.cpp )
         add_framework_test( test_api                test/test_api.cpp )
         add_framework_test( test_physics            test/test_physics.cpp )
-        add_framework_test( test_ema                test/test_ema.cpp)
         add_framework_test( test_io                 test/test_io.cpp )
-        add_framework_test( test_anisotropy         test/test_anisotropy.cpp )
         add_framework_test( test_aggregation        test/test_aggregation.cpp )
-        add_framework_test( test_solvers            test/test_solvers.cpp )
         if( SPIRIT_ENABLE_PINNING )
             add_framework_test( test_pinning            test/test_pinning.cpp )
+        endif()
+        if( SPIRIT_ENABLE_LATTICE )
+            add_framework_test( test_lattice            test/test_lattice.cpp )
+        else()
+            add_framework_test( test_anisotropy         test/test_anisotropy.cpp )
+            add_framework_test( test_ema                test/test_ema.cpp)
+            add_framework_test( test_solvers            test/test_solvers.cpp )
         endif()
     endif()
     #--------------------------------------------------
@@ -605,6 +621,7 @@ if( SPIRIT_BUILD_FOR_PYTHON )
         "scalartype       = \"${SPIRIT_SCALAR_TYPE}\"\n"
         "pinning          = \"${SPIRIT_ENABLE_PINNING}\"\n"
         "defects          = \"${SPIRIT_ENABLE_DEFECTS}\"\n"
+        "lattice          = \"${SPIRIT_ENABLE_LATTICE}\"\n"
         "cuda             = \"${SPIRIT_USE_CUDA}\"\n"
         "openmp           = \"${SPIRIT_USE_OPENMP}\"\n"
         "stdpar           = \"${SPIRIT_USE_STDPAR}\"\n"
@@ -628,7 +645,9 @@ if( SPIRIT_BUILD_FOR_PYTHON )
     #--------------------------------------------------
 
     #--------------------------------------------------
-    if( SPIRIT_BUILD_TEST )
+    if( SPIRIT_BUILD_TEST AND SPIRIT_ENABLE_LATTICE )
+        message( WARNING ">> Unit tests for python bindings have been (temporarily) disabled in the spin-lattice build" )
+    elseif( SPIRIT_BUILD_TEST )
         message( STATUS ">> Setting up unit tests for python bindings" )
         # find_package( PythonInterp 2.7 REQUIRED )
         find_package( Python3 COMPONENTS Interpreter NumPy REQUIRED )

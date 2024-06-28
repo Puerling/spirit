@@ -230,6 +230,7 @@ void Quantity_Get_Grad_Force_MinimumMode(
     State * state, scalar * f_grad, scalar * eval, scalar * mode, scalar * forces, int idx_image, int idx_chain )
 try
 {
+#ifndef SPIRIT_ENABLE_LATTICE
     using namespace Engine;
     using namespace Utility;
 
@@ -402,6 +403,11 @@ try
             mode[3 * _i + dim]   = minimum_mode[_i][dim];
         }
     }
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        "Quantity_Get_Grad_Force_MinimumMode() is not implemented for spin-lattice Hamiltonians" );
+#endif
 }
 catch( ... )
 {

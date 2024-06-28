@@ -51,6 +51,46 @@ catch( ... )
     return nullptr;
 }
 
+scalar * System_Get_Lattice_Displacement( State * state, int idx_image, int idx_chain ) noexcept
+try
+{
+#ifdef SPIRIT_ENABLE_LATTICE
+    // Fetch correct indices and pointers
+    auto [image, chain] = from_indices( state, idx_image, idx_chain );
+
+    return (scalar *)get<Field::Displacement>( *image->state )[0].data();
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        fmt::format( "{}() is only implemented for spin-lattice Hamiltonians", __func__ ) );
+#endif
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+    return nullptr;
+}
+
+scalar * System_Get_Lattice_Momentum( State * state, int idx_image, int idx_chain ) noexcept
+try
+{
+#ifdef SPIRIT_ENABLE_LATTICE
+    // Fetch correct indices and pointers
+    auto [image, chain] = from_indices( state, idx_image, idx_chain );
+
+    return (scalar *)get<Field::Momentum>( *image->state )[0].data();
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        fmt::format( "{}() is only implemented for spin-lattice Hamiltonians", __func__ ) );
+#endif
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+    return nullptr;
+}
+
 scalar * System_Get_Effective_Field( State * state, int idx_image, int idx_chain ) noexcept
 try
 {
@@ -263,13 +303,18 @@ catch( ... )
 void System_Update_Eigenmodes( State * state, int idx_image, int idx_chain ) noexcept
 try
 {
-
+#ifndef SPIRIT_ENABLE_LATTICE
     // Fetch correct indices and pointers
     auto [image, chain] = from_indices( state, idx_image, idx_chain );
 
     image->lock();
     Engine::Spin::Eigenmodes::Calculate_Eigenmodes( *image, idx_image, idx_chain );
     image->unlock();
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        "System_Update_Eigenmodes() is not implemented for spin-lattice Hamiltonians" );
+#endif
 }
 catch( ... )
 {

@@ -200,6 +200,13 @@ inline bool same_size( const Data::Geometry & lhs, const Data::Geometry & rhs ) 
 // TODO: find better place (?)
 std::vector<triangle_t> compute_delaunay_triangulation_2D( const std::vector<vector2_t> & points );
 
+inline Vector3 lattice_to_cartesian( const Data::Geometry & geometry, const Vector3 & v )
+{
+    return { v.dot( geometry.lattice_constant * geometry.bravais_vectors[0] ),
+             v.dot( geometry.lattice_constant * geometry.bravais_vectors[1] ),
+             v.dot( geometry.lattice_constant * geometry.bravais_vectors[2] ) };
+}
+
 } // namespace Data
 
 #endif

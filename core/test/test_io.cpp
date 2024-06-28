@@ -14,8 +14,11 @@
 
 #include <catch.hpp>
 
+#ifdef SPIRIT_ENABLE_LATTICE
+const char inputfile[] = "core/test/input/lattice_spring.cfg";
+#else
 const char inputfile[] = "core/test/input/fd_pairs.cfg";
-
+#endif
 using Catch::Matchers::WithinAbs;
 
 TEST_CASE( "IO: files written and read back in should restore the spin configuration", "[io]" )

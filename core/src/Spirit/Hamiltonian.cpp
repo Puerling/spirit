@@ -810,6 +810,7 @@ void Hamiltonian_Write_Hessian(
     State * state, const char * filename, bool triplet_format, int idx_image, int idx_chain ) noexcept
 try
 {
+#ifndef SPIRIT_ENABLE_LATTICE
     // Fetch correct indices and pointers
     auto [image, chain] = from_indices( state, idx_image, idx_chain );
     throw_if_nullptr( filename, "filename" );
@@ -823,6 +824,11 @@ try
         saveTriplets( std::string( filename ), hessian );
     else
         saveMatrix( std::string( filename ), hessian );
+#else
+    spirit_throw(
+        Exception_Classifier::Not_Implemented, Log_Level::Error,
+        "Hamiltonian_Write_Hessian() is not implemented for spin-lattice Hamiltonians" );
+#endif
 }
 catch( ... )
 {

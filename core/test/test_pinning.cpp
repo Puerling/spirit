@@ -35,6 +35,7 @@ namespace C = Utility::Constants;
 [[maybe_unused]] constexpr scalar epsilon_6 = 1e-6;
 #endif
 
+#ifndef SPIRIT_ENABLE_LATTICE
 TEST_CASE( "Dynamics solvers should follow Larmor precession with one pinned spin and Heisenber exchange", "[physics]" )
 {
     using Engine::Spin::Solver;
@@ -132,5 +133,6 @@ TEST_CASE( "Dynamics solvers should follow Larmor precession with one pinned spi
         Simulation_Stop( state.get() );
     }
 }
+#endif
 
 #endif

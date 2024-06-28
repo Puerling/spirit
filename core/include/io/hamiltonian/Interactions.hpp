@@ -2,6 +2,7 @@
 
 #include <data/Geometry.hpp>
 #include <engine/spin/Hamiltonian.hpp>
+#include <engine/spin_lattice/Hamiltonian.hpp>
 #include <io/Fileformat.hpp>
 #include <io/Filter_File_Handle.hpp>
 #include <io/IO.hpp>
@@ -44,5 +45,17 @@ void DDI_from_Config(
     const std::string & config_file_name, const Data::Geometry & geometry, std::vector<std::string> & parameter_log,
     Engine::Spin::DDI_Method & ddi_method, intfield & ddi_n_periodic_images, bool & ddi_pb_zero_padding,
     scalar & ddi_radius );
+
+void Lattice_Spring_Potential_from_Config(
+    const std::string & config_file_name, const Data::Geometry & geometry, std::vector<std::string> & parameter_log,
+    Engine::SpinLattice::Interaction::Lattice_Spring_Potential::Data & data );
+
+void Lattice_Harmonic_Potential_from_Config(
+    const std::string & config_file_name, const Data::Geometry & geometry, std::vector<std::string> & parameter_log,
+    Engine::SpinLattice::Interaction::Lattice_Harmonic_Potential::Data & data );
+
+void Lattice_Kinetic_from_Config(
+    const std::string & config_file_name, const Data::Geometry & geometry, std::vector<std::string> & parameter_log,
+    Engine::SpinLattice::Interaction::Lattice_Kinetic::Data & data );
 
 } // namespace IO

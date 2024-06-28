@@ -34,6 +34,9 @@ The array is contiguous and of shape (NOS, 3).
 */
 PREFIX scalar * System_Get_Spin_Directions( State * state, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
 
+PREFIX scalar * System_Get_Lattice_Displacement( State * state, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
+PREFIX scalar * System_Get_Lattice_Momentum( State * state, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
+
 /*
 Returns a pointer to the effective field data.
 

@@ -1,3 +1,4 @@
+#ifndef SPIRIT_ENABLE_LATTICE
 #include <Spirit/Configurations.h>
 #include <Spirit/Parameters_EMA.h>
 #include <Spirit/Simulation.h>
@@ -36,3 +37,4 @@ TEST_CASE( "Trivial", "[EMA]" )
         REQUIRE( gradient[i].isApprox( gradient_expected, 1e-4 ) );
     }
 }
+#endif

@@ -17,7 +17,6 @@ namespace HTST
 {
 
 // Note the two images should correspond to one minimum and one saddle point
-template<typename system_t>
 void Calculate( Data::HTST_Info<system_t> & htst_info, int n_eigenmodes_keep = 0 );
 
 // Calculate the 'a' component of the prefactor

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <engine/spin/StateType.hpp>
+#include <engine/spin_lattice/StateType.hpp>
 
 namespace Engine
 {

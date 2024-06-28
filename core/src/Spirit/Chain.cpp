@@ -666,6 +666,7 @@ catch( ... )
 void Chain_Update_Data( State * state, int idx_chain ) noexcept
 try
 {
+#ifndef SPIRIT_ENABLE_LATTICE
     int idx_image = -1;
 
     // Fetch correct indices and pointers
@@ -692,6 +693,11 @@ try
         }
         chain->images[i]->unlock();
     }
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        "Chain_Update_Data() is not implemented for spin-lattice Hamiltonians" );
+#endif
 }
 catch( ... )
 {
@@ -701,6 +707,7 @@ catch( ... )
 void Chain_Setup_Data( State * state, int idx_chain ) noexcept
 try
 {
+#ifndef SPIRIT_ENABLE_LATTICE
     int idx_image = -1;
 
     // Fetch correct indices and pointers
@@ -728,6 +735,11 @@ try
 
     // Initial data update
     Chain_Update_Data( state, idx_chain );
+#else
+    spirit_throw(
+        Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+        "Chain_Setup_Data() is not implemented for spin-lattice Hamiltonians" );
+#endif
 }
 catch( ... )
 {
