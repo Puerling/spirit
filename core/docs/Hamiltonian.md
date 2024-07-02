@@ -113,3 +113,36 @@ The Hamiltonian is defined as
 ![Gaussian Hamiltonian](https://math.vercel.app/?bgcolor=auto&from=%5Cmathcal%7BH%7D%20%3D%20%5Csum%5Climits_i%20%5Cmathcal%7BH%7D_i%20%20%3D%20%5Csum%5Climits_i%20a_i%20%5Cexp%5Cleft%28%20-%5Cfrac%7B(1%20-%20%5Cvec%7Bn%7D%5Ccdot%5Cvec%7Bc%7D_i%29%5E2%7D%7B2%5Csigma_i%5E2%7D%20%5Cright))
 
 <!-- $$ \mathcal{H}[\vec{n}] = \sum\limits_i \mathcal{H}_i[\vec{n}]  = \sum\limits_i a_i \exp\left( -\frac{(1 - \vec{n}\cdot\vec{c}_i)^2}{2\sigma_i^2} \right) $$ -->
+
+
+
+Lattice Hamiltonian
+====================================================
+
+
+### Hamiltonian
+The Lattice-Hamiltonian is defined as
+
+![Lattice Hamiltonian](https://math.vercel.app/?from=%5Cmathcal%7BH%7D%5B%5Cvec%7Bu%7D%2C%20%5Cvec%7Bp%7D%5D%20%3D%20%5Cfrac%7B1%7D%7B2%7D%20%5Csum_%7Bi%7D%20%5Cvec%7Bp%7D_i%5ET%20M_i%5E%7B-1%7D%20%5Cvec%7Bp%7D_i%20%2B%20%5Cmathcal%7BV%7D%5B%5Cvec%7Bu%7D%5D.svg)
+
+
+<!-- $$ \mathcal{H}[\vec{u}, \vec{p}] = \frac{1}{2} \sum_i \vec{p}_i^T M_i^{-1} \vec{p}_i + \mathcal{V}[\vec{u}] $$ -->
+
+where $M_i$ denotes a generalized mass tensor and $\vec{u}_i$ is the displacement of atom $i$ from its equilibrium position $\vec{R}_i$.
+
+
+### Harmonic Potential
+This model implements the lattice dynamics in terms of the force constant matrix $\Phi_{ij}$
+
+![Harmonic Potential](https://math.vercel.app/?from=%5Cmathcal%7BV%7D_H%5B%5Cvec%7Bu%7D%5D%20%3D%20%5Cfrac%7B1%7D%7B2%7D%20%5Csum_%7Bi%2Cj%7D%20%5Cvec%7Bu%7D_i%5ET%5CPhi_%7Bij%7D%5Cvec%7Bu%7D_j.svg)
+
+<!-- \mathcal{V}_H[\vec{u}] = \frac{1}{2} \sum{i,j} \vec{u}_i^T\Phi_{ij}\vec{u}_j -->
+
+
+### Spring Potential
+This potential models the repulsion between atoms as elastic springs with spring constant $V_{ij}$ yielding a rotationally invariant formulation.
+The equilibrium distance $\lVert R_{ij} \rVert$ is associated with the configuration that minimizes the spring potential.
+
+![Spring Potential](https://math.vercel.app/?from=%5Cmathcal%7BV%7D_S%5B%5Cvec%7Bu%7D%5D%20%3D%20%5Cfrac%7B1%7D%7B4%7D%20%5Csum_%7Bi%2Cj%7D%20V_%7Bij%7D%20%5Ccdot%20%28%5ClVert%5Cvec%7BR%7D_%7Bij%7D%20%2B%20%5Cvec%7Bu%7D_j%20-%20%5Cvec%7Bu%7D_i%5CrVert%20%20-%20%5ClVert%5Cvec%7BR%7D_%7Bij%7D%5CrVert%29%5E2.svg)
+
+<!-- \mathcal{V}_S[\vec{u}] = \frac{1}{4} \sum_{i,j} V_{ij} \cdot (\lVert\vec{R}_{ij} + \vec{u}_j - \vec{u}_i\rVert  - \lVert\vec{R}_{ij}\rVert)^2 -->
