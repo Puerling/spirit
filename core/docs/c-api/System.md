@@ -46,6 +46,30 @@ The array is contiguous and of shape (NOS, 3).
 
 
 
+### System_Get_Lattice_Displacement
+
+```C
+scalar * System_Get_Lattice_Displacement(State * state, int idx_image=-1, int idx_chain=-1)
+```
+
+Returns a pointer to the lattice displacement data.
+
+The array is contiguous and of shape (NOS, 3).
+
+
+
+### System_Get_Lattice_Momentum
+
+```C
+scalar * System_Get_Lattice_Momentum(State * state, int idx_image=-1, int idx_chain=-1)
+```
+
+Returns a pointer to the lattice momentum data.
+
+The array is contiguous and of shape (NOS, 3).
+
+
+
 ### System_Get_Effective_Field
 
 ```C

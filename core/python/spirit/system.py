@@ -61,6 +61,54 @@ def get_spin_directions(p_state, idx_image=-1, idx_chain=-1):
     return array_view
 
 
+### Get Pointer to Lattice Displacement
+# NOTE: Changing the values of the array_view one can alter the value of the data of the state
+_Get_Lattice_Displacement = _spirit.System_Get_Lattice_Displacement
+_Get_Lattice_Displacement.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_Get_Lattice_Displacement.restype = ctypes.POINTER(scalar)
+
+
+def get_lattice_displacement(p_state, idx_image=-1, idx_chain=-1):
+    """Returns an `numpy.array_view` of shape (NOS, 3) with the components of each lattice displacement vector.
+
+    Changing the contents of this array_view will have direct effect on calculations etc.
+    """
+    nos = get_nos(p_state, idx_image, idx_chain)
+    ArrayType = scalar * 3 * nos
+    Data = _Get_Lattice_Displacement(
+        ctypes.c_void_p(p_state), ctypes.c_int(idx_image), ctypes.c_int(idx_chain)
+    )
+    array_pointer = ctypes.cast(Data, ctypes.POINTER(ArrayType))
+    array = frombuffer(array_pointer.contents, dtype=scalar)
+    array_view = array.view()
+    array_view.shape = (nos, 3)
+    return array_view
+
+
+### Get Pointer to Lattice Momentum
+# NOTE: Changing the values of the array_view one can alter the value of the data of the state
+_Get_Lattice_Momentum = _spirit.System_Get_Lattice_Momentum
+_Get_Lattice_Momentum.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_Get_Lattice_Momentum.restype = ctypes.POINTER(scalar)
+
+
+def get_lattice_momentum(p_state, idx_image=-1, idx_chain=-1):
+    """Returns an `numpy.array_view` of shape (NOS, 3) with the components of each lattice momentum vector.
+
+    Changing the contents of this array_view will have direct effect on calculations etc.
+    """
+    nos = get_nos(p_state, idx_image, idx_chain)
+    ArrayType = scalar * 3 * nos
+    Data = _Get_Lattice_Momentum(
+        ctypes.c_void_p(p_state), ctypes.c_int(idx_image), ctypes.c_int(idx_chain)
+    )
+    array_pointer = ctypes.cast(Data, ctypes.POINTER(ArrayType))
+    array = frombuffer(array_pointer.contents, dtype=scalar)
+    array_view = array.view()
+    array_view.shape = (nos, 3)
+    return array_view
+
+
 ### Get Pointer to Effective Field
 # NOTE: Changing the values of the array_view one can alter the value of the data of the state
 _Get_Effective_Field = _spirit.System_Get_Effective_Field

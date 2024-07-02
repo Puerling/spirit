@@ -301,6 +301,8 @@ set( INTERFACE_EXPORT_FUNCTIONS
     '_System_Get_Index'
     '_System_Get_NOS'
     '_System_Get_Spin_Directions'
+    '_System_Get_Lattice_Displacement'
+    '_System_Get_Lattice_Momentum'
     '_System_Get_Effective_Field'
     '_System_Get_Eigenmode'
     '_System_Get_Rx'
