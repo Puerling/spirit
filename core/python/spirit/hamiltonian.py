@@ -5,12 +5,11 @@ Hamiltonian
 Set the parameters of the Heisenberg Hamiltonian, such as external field or exchange interaction.
 """
 
-from spirit import spiritlib
 from spirit.scalar import scalar
 import ctypes
 
 ### Load Library
-_spirit = spiritlib.load_spirit_library()
+from spirit.spiritlib import _spirit
 
 ### DM vector chirality
 CHIRALITY_BLOCH = 1
