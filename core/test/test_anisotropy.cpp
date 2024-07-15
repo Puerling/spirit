@@ -1,4 +1,3 @@
-#ifndef SPIRIT_ENABLE_LATTICE
 #include <Spirit/Configurations.h>
 #include <Spirit/Constants.h>
 #include <Spirit/Geometry.h>
@@ -12,6 +11,10 @@
 #include <engine/Vectormath.hpp>
 #include <engine/Vectormath_Defines.hpp>
 #include <utility/Constants.hpp>
+
+#ifdef SPIRIT_ENABLE_LATTICE
+#include <engine/spin_lattice/Hamiltonian.hpp>
+#endif
 
 #include "catch.hpp"
 #include "matchers.hpp"
@@ -54,6 +57,7 @@ using Catch::CustomMatchers::within_digits;
 using Catch::Matchers::Equals;
 using Catch::Matchers::WithinAbs;
 
+#ifndef SPIRIT_ENABLE_LATTICE
 TEST_CASE( "Uniaxial nisotropy", "[anisotropy]" )
 {
     auto state = std::shared_ptr<State>( State_Setup(), State_Delete );
@@ -416,4 +420,162 @@ TEST_CASE( "Biaxial anisotropy", "[anisotropy]" )
         }
     }
 }
+#else
+
+TEST_CASE( "Check analytical against finite difference soultion for simple configurations", "[anisotropy]" )
+{
+    static constexpr auto config_file = "core/test/input/rotationally_invariant.cfg";
+
+    auto state = std::shared_ptr<State>( State_Setup( config_file ), State_Delete );
+
+    int idx_image = -1, idx_chain = -1;
+    auto [image, chain] = from_indices( state.get(), idx_image, idx_chain );
+
+    auto * hamiltonian = image->hamiltonian.get();
+    REQUIRE( hamiltonian != nullptr );
+
+    namespace Interaction = Engine::SpinLattice::Interaction;
+
+    auto interaction = hamiltonian->getInteraction<Interaction::Displacement_Anisotropy>();
+    REQUIRE( interaction != nullptr );
+    REQUIRE( interaction->is_contributing() );
+
+    using Engine::SpinLattice::make_quantity;
+    using Engine::SpinLattice::quantity;
+    using Engine::SpinLattice::StateType;
+
+    auto configuration = make_quantity( vectorfield( image->nos, Vector3::Zero() ) );
+    auto gradient_fd   = make_quantity( vectorfield( image->nos, Vector3::Zero() ) );
+    auto verify        = [nos = image->nos, &interaction = *interaction](
+                      const StateType & configuration, const quantity<vectorfield> & gradient_expected )
+    {
+        using AdaptorType = std::decay_t<decltype( interaction )>;
+        using GradientFn  = decltype( &AdaptorType::Gradient_Spin );
+        static_assert(
+            std::is_same_v<GradientFn, decltype( &AdaptorType::Gradient_Momentum )>
+            && std::is_same_v<GradientFn, decltype( &AdaptorType::Gradient_Displacement )> );
+
+        auto verify = [&]( std::string_view label, GradientFn gradient_fn, const StateType & configuration,
+                           const vectorfield & gradient_expected )
+        {
+            auto gradient = vectorfield( nos, Vector3::Zero() );
+            std::invoke( gradient_fn, &interaction, configuration, gradient );
+            std::string configuration_str = [nos, &configuration]
+            {
+                std::ostringstream oss{};
+                for( int i = 0; i < nos; ++i )
+                {
+                    oss << fmt::format( "{:>02d}", i );
+                    oss << " | " << configuration.spin[i].transpose();
+                    oss << " | " << configuration.displacement[i].transpose();
+                    oss << " | " << configuration.momentum[i].transpose();
+                    oss << "\n";
+                }
+                return oss.str();
+            }();
+
+            for( int i = 0; i < nos; ++i )
+            {
+                // low precision for gradients close to zero
+                const scalar delta_norm = ( gradient_expected[i] - gradient[i] ).norm();
+                INFO( label << ( label.empty() ? "" : "\n" ) );
+                INFO( "i = " << i << ", epsilon = " << epsilon_5 << "\n" );
+                INFO( "Gradient (expected) = " << gradient_expected[i].transpose() << "\n" );
+                INFO( "Gradient (actual)   = " << gradient[i].transpose() << "\n" );
+                INFO( "|Δ|                 = " << delta_norm );
+                INFO( "configuration: \n" << configuration_str );
+                REQUIRE( delta_norm <= epsilon_5 );
+            }
+        };
+
+        verify( "Spin", &AdaptorType::Gradient_Spin, configuration, gradient_expected.spin );
+        verify( "Displacement", &AdaptorType::Gradient_Displacement, configuration, gradient_expected.displacement );
+        // verify( "Momentum", &AdaptorType::Gradient_Momentum, configuration, gradient_expected.momentum );
+    };
+
+    auto set_zero = []( quantity<vectorfield> & vf )
+    {
+        Engine::Vectormath::fill( vf.spin, Vector3{ 0, 0, 0 } );
+        Engine::Vectormath::fill( vf.displacement, Vector3{ 0, 0, 0 } );
+        Engine::Vectormath::fill( vf.momentum, Vector3{ 0, 0, 0 } );
+    };
+
+    auto energy_fn = [&interaction]( const StateType & state ) -> scalar { return interaction->Energy( state ); };
+
+    auto verify_against_fd = [&verify, &set_zero, &gradient_fd, &energy_fn]( const StateType & configuration )
+    {
+        set_zero( gradient_fd );
+        Engine::Vectormath::Gradient( configuration, gradient_fd, energy_fn );
+
+        verify( configuration, gradient_fd );
+    };
+
+    auto fill_rotating = []( vectorfield & vf, Vector3 v, Vector3 axis, scalar angle )
+    {
+        namespace Backend = Engine::Backend;
+        Engine::Backend::for_each_n(
+            Backend::counting_iterator( 0 ), vf.size(),
+            [vf = vf.data(), &v, &axis, angle]( const int idx )
+            {
+                vf[idx] = v;
+                v       = Engine::Vectormath::rotated( v, axis, angle );
+            } );
+    };
+
+    set_zero( configuration );
+
+    SECTION( "rotating" )
+    {
+        using Engine::Vectormath::fill;
+
+        for( int alpha = 0; alpha < 3; ++alpha )
+        {
+            Vector3 u = Vector3::Zero();
+            u[alpha]  = 0.1;
+            fill( configuration.displacement, u );
+
+            for( int beta = 0; beta < 3; ++beta )
+            {
+                Vector3 n = Vector3::Zero();
+                n[beta]   = 1.0;
+                fill_rotating( configuration.spin, n, Vector3{ 1, 1, 1 }.normalized(), C::Pi_2 );
+
+                verify_against_fd( configuration );
+            }
+        }
+
+        for( int alpha = 0; alpha < 3; ++alpha )
+        {
+            Vector3 u = Vector3::Zero();
+            u[alpha]  = 0.1;
+            fill_rotating( configuration.displacement, u, Vector3{ 1, 1, 1 }.normalized(), C::Pi_2 );
+
+            for( int beta = 0; beta < 3; ++beta )
+            {
+                Vector3 n = Vector3::Zero();
+                n[beta]   = 1.0;
+                fill( configuration.spin, n );
+
+                verify_against_fd( configuration );
+            }
+        }
+
+        for( int alpha = 0; alpha < 3; ++alpha )
+        {
+            Vector3 u = Vector3::Zero();
+            u[alpha]  = 0.1;
+            fill_rotating( configuration.displacement, u, Vector3{ 1, 1, 1 }.normalized(), C::Pi_2 );
+
+            for( int beta = 0; beta < 3; ++beta )
+            {
+                Vector3 n = Vector3::Zero();
+                n[beta]   = 1.0;
+                fill_rotating( configuration.spin, n, Vector3{ 1, 1, 1 }.normalized(), C::Pi_2 );
+
+                verify_against_fd( configuration );
+            }
+        }
+    }
+}
+
 #endif

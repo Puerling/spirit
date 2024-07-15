@@ -335,6 +335,56 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_Lattice_Har
     return hamiltonian;
 }
 
+std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_RotInvariant_from_Config(
+    const std::string & config_file_name, Data::Geometry geometry, intfield boundary_conditions )
+{
+    Log( Log_Level::Debug, Log_Sender::IO, "Hamiltonian_RotInvariant: building" );
+    // pull in the relevant namespaces and type we want to build
+    namespace Interaction = Engine::SpinLattice::Interaction;
+    using Engine::SpinLattice::HamiltonianVariant;
+
+    std::vector<std::string> parameter_log;
+    parameter_log.emplace_back( "Rotationally Invariant Hamiltonian:" );
+    parameter_log.emplace_back( fmt::format(
+        "    {:<21} = {} {} {}", "boundary conditions", boundary_conditions[0], boundary_conditions[1],
+        boundary_conditions[2] ) );
+
+    //-------------- Insert default values here -----------------------------
+    Interaction::Lattice_Spring_Potential::Data lattice_potential{};
+    lattice_potential.pairs      = pairfield( 0 );
+    lattice_potential.magnitudes = scalarfield( 0 );
+
+    Interaction::Lattice_Kinetic::Data lattice_kinetic{};
+    lattice_kinetic.magnitudes = scalarfield( 0 );
+    lattice_kinetic.normals    = vectorfield( 0 );
+
+    Interaction::Displacement_Anisotropy::Data displacement_anisotropy{};
+    displacement_anisotropy.pairs      = pairfield( 0 );
+    displacement_anisotropy.magnitudes = scalarfield( 0 );
+
+    //------------------------------- Parser --------------------------------
+    if( !config_file_name.empty() )
+    {
+        Lattice_Kinetic_from_Config( config_file_name, geometry, parameter_log, lattice_kinetic );
+
+        Lattice_Spring_Potential_from_Config( config_file_name, geometry, parameter_log, lattice_potential );
+
+        Displacement_Anisotropy_from_Config( config_file_name, geometry, parameter_log, displacement_anisotropy );
+    }
+    else
+        Log( Log_Level::Parameter, Log_Sender::IO, "Hamiltonian_Lattice: Using default configuration!" );
+
+    Log( Log_Level::Parameter, Log_Sender::IO, parameter_log );
+
+    auto hamiltonian = std::make_unique<HamiltonianVariant>( HamiltonianVariant::RotInvariant(
+        std::move( geometry ), std::move( boundary_conditions ), std::move( lattice_kinetic ),
+        std::move( lattice_potential ), std::move( displacement_anisotropy ) ) );
+
+    assert( hamiltonian->Name() == "Rotationally Invariant" );
+    Log( Log_Level::Debug, Log_Sender::IO, fmt::format( "Hamiltonian_{}: built", hamiltonian->Name() ) );
+    return hamiltonian;
+}
+
 } // namespace
 
 template<>
@@ -357,6 +407,11 @@ Hamiltonian_from_Config( const std::string & config_file_name, Data::Geometry ge
         else if( hamiltonian_type == "lattice_harmonic" )
         {
             hamiltonian = Hamiltonian_Lattice_Harmonic_from_Config(
+                config_file_name, std::move( geometry ), std::move( boundary_conditions ) );
+        }
+        else if( hamiltonian_type == "rotationally_invariant" )
+        {
+            hamiltonian = Hamiltonian_RotInvariant_from_Config(
                 config_file_name, std::move( geometry ), std::move( boundary_conditions ) );
         }
         else

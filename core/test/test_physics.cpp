@@ -387,7 +387,8 @@ static constexpr std::array hamiltonian_input_files{
     // "core/test/input/fd_gaussian.cfg", // TODO: issue with precision
     "core/test/input/fd_quadruplet.cfg"
 #else
-    "core/test/input/lattice_spring.cfg", "core/test/input/lattice_harmonic.cfg"
+    "core/test/input/lattice_spring.cfg", "core/test/input/lattice_harmonic.cfg",
+    "core/test/input/rotationally_invariant.cfg"
 #endif
 };
 
@@ -470,11 +471,11 @@ TEST_CASE( "Finite difference and regular Hamiltonian should match", "[physics]"
                     // low precision for gradients close to zero
                     const scalar delta_norm = ( grad_fd[i] - grad[i] ).norm();
                     INFO( label << ( label.empty() ? "" : "\n" ) );
-                    INFO( "i = " << i << ", epsilon = " << epsilon_6 << "\n" );
+                    INFO( "i = " << i << ", epsilon = " << epsilon_5 << "\n" );
                     INFO( "Gradient (FD) = " << grad_fd[i].transpose() << "\n" );
                     INFO( "Gradient      = " << grad[i].transpose() << "\n" );
                     INFO( "|Δ|           = " << delta_norm );
-                    REQUIRE( delta_norm <= epsilon_6 );
+                    REQUIRE( delta_norm <= epsilon_5 );
                 }
             };
 

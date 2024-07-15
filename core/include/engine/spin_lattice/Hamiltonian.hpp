@@ -4,6 +4,7 @@
 #include <engine/common/Hamiltonian.hpp>
 #include <engine/spin_lattice/Interaction_Standalone_Adaptor.hpp>
 #include <engine/spin_lattice/StateType.hpp>
+#include <engine/spin_lattice/interaction/Displacement_Anisotropy.hpp>
 #include <engine/spin_lattice/interaction/Lattice_Harmonic_Potential.hpp>
 #include <engine/spin_lattice/interaction/Lattice_Kinetic.hpp>
 #include <engine/spin_lattice/interaction/Lattice_Spring_Potential.hpp>
@@ -71,12 +72,16 @@ struct HamiltonianVariantTypes
     using state_t     = quantity<vectorfield>;
     using AdaptorType = SpinLattice::Interaction::StandaloneAdaptor<state_t>;
 
-    using Lattice_Spring
-        = Hamiltonian<state_t, AdaptorType, Interaction::Lattice_Kinetic, Interaction::Lattice_Spring_Potential>;
-    using Lattice_Harmonic
-        = Hamiltonian<state_t, AdaptorType, Interaction::Lattice_Kinetic, Interaction::Lattice_Harmonic_Potential>;
+    template<typename... Interactions>
+    using HamiltonianTemplate = Hamiltonian<state_t, AdaptorType, Interactions...>;
 
-    using Variant = std::variant<Lattice_Spring, Lattice_Harmonic>;
+    using Lattice_Spring   = HamiltonianTemplate<Interaction::Lattice_Kinetic, Interaction::Lattice_Spring_Potential>;
+    using Lattice_Harmonic = HamiltonianTemplate<Interaction::Lattice_Kinetic, Interaction::Lattice_Harmonic_Potential>;
+
+    using RotInvariant = HamiltonianTemplate<
+        Interaction::Lattice_Kinetic, Interaction::Lattice_Spring_Potential, Interaction::Displacement_Anisotropy>;
+
+    using Variant = std::variant<Lattice_Spring, Lattice_Harmonic, RotInvariant>;
 };
 
 // Single Type wrapper around Variant Hamiltonian type
@@ -87,6 +92,7 @@ public:
     using state_t          = typename HamiltonianVariantTypes::state_t;
     using Lattice_Spring   = typename HamiltonianVariantTypes::Lattice_Spring;
     using Lattice_Harmonic = typename HamiltonianVariantTypes::Lattice_Harmonic;
+    using RotInvariant     = typename HamiltonianVariantTypes::RotInvariant;
     using Variant          = typename HamiltonianVariantTypes::Variant;
     using AdaptorType      = typename HamiltonianVariantTypes::AdaptorType;
 
@@ -102,6 +108,10 @@ public:
         std::is_nothrow_move_constructible_v<Lattice_Harmonic> )
             : base_t( std::move( hamiltonian ) ) {};
 
+    explicit HamiltonianVariant( RotInvariant && hamiltonian ) noexcept(
+        std::is_nothrow_move_constructible_v<RotInvariant> )
+            : base_t( std::move( hamiltonian ) ) {};
+
     [[nodiscard]] std::string_view Name() const noexcept
     {
         if( std::holds_alternative<Lattice_Spring>( hamiltonian ) )
@@ -109,6 +119,9 @@ public:
 
         if( std::holds_alternative<Lattice_Harmonic>( hamiltonian ) )
             return "Lattice (harmonic)";
+
+        if( std::holds_alternative<RotInvariant>( hamiltonian ) )
+            return "Rotationally Invariant";
 
         // std::unreachable();
 
