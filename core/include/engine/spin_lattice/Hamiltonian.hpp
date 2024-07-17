@@ -5,9 +5,11 @@
 #include <engine/spin_lattice/Interaction_Standalone_Adaptor.hpp>
 #include <engine/spin_lattice/StateType.hpp>
 #include <engine/spin_lattice/interaction/Displacement_Anisotropy.hpp>
+#include <engine/spin_lattice/interaction/Exchange.hpp>
 #include <engine/spin_lattice/interaction/Lattice_Harmonic_Potential.hpp>
 #include <engine/spin_lattice/interaction/Lattice_Kinetic.hpp>
 #include <engine/spin_lattice/interaction/Lattice_Spring_Potential.hpp>
+#include <engine/spin_lattice/interaction/Quadruplet.hpp>
 #include <utility/Variadic_Traits.hpp>
 
 namespace Engine
@@ -79,7 +81,8 @@ struct HamiltonianVariantTypes
     using Lattice_Harmonic = HamiltonianTemplate<Interaction::Lattice_Kinetic, Interaction::Lattice_Harmonic_Potential>;
 
     using RotInvariant = HamiltonianTemplate<
-        Interaction::Lattice_Kinetic, Interaction::Lattice_Spring_Potential, Interaction::Displacement_Anisotropy>;
+        Interaction::Lattice_Kinetic, Interaction::Lattice_Spring_Potential, Interaction::Exchange,
+        Interaction::Quadruplet, Interaction::Displacement_Anisotropy>;
 
     using Variant = std::variant<Lattice_Spring, Lattice_Harmonic, RotInvariant>;
 };

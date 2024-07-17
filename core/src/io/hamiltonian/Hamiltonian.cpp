@@ -362,6 +362,20 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_RotInvarian
     displacement_anisotropy.pairs      = pairfield( 0 );
     displacement_anisotropy.magnitudes = scalarfield( 0 );
 
+    // ------------ Pair Interactions ------------
+    Interaction::Exchange::Data exchange{};
+    exchange.shell_magnitudes = scalarfield( 0 );
+    exchange.pairs            = pairfield( 0 );
+    exchange.magnitudes       = scalarfield( 0 );
+
+    auto dmi_pairs      = pairfield( 0 );
+    auto dmi_magnitudes = scalarfield( 0 );
+    auto dmi_normals    = vectorfield( 0 );
+
+    Interaction::Quadruplet::Data quadruplet{};
+    quadruplet.quadruplets = quadrupletfield( 0 );
+    quadruplet.magnitudes  = scalarfield( 0 );
+
     //------------------------------- Parser --------------------------------
     if( !config_file_name.empty() )
     {
@@ -370,6 +384,13 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_RotInvarian
         Lattice_Spring_Potential_from_Config( config_file_name, geometry, parameter_log, lattice_potential );
 
         Displacement_Anisotropy_from_Config( config_file_name, geometry, parameter_log, displacement_anisotropy );
+
+        Pair_Interactions_from_Pairs_from_Config(
+            config_file_name, geometry, parameter_log, exchange.pairs, exchange.magnitudes, dmi_pairs, dmi_magnitudes,
+            dmi_normals );
+
+        Quadruplets_from_Config(
+            config_file_name, geometry, parameter_log, quadruplet.quadruplets, quadruplet.magnitudes );
     }
     else
         Log( Log_Level::Parameter, Log_Sender::IO, "Hamiltonian_Lattice: Using default configuration!" );
@@ -378,7 +399,8 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_RotInvarian
 
     auto hamiltonian = std::make_unique<HamiltonianVariant>( HamiltonianVariant::RotInvariant(
         std::move( geometry ), std::move( boundary_conditions ), std::move( lattice_kinetic ),
-        std::move( lattice_potential ), std::move( displacement_anisotropy ) ) );
+        std::move( lattice_potential ), std::move( exchange ), std::move( quadruplet ),
+        std::move( displacement_anisotropy ) ) );
 
     assert( hamiltonian->Name() == "Rotationally Invariant" );
     Log( Log_Level::Debug, Log_Sender::IO, fmt::format( "Hamiltonian_{}: built", hamiltonian->Name() ) );
