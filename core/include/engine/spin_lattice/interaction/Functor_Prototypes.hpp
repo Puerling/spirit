@@ -7,6 +7,7 @@
 #include <engine/Span.hpp>
 #include <engine/Vectormath_Defines.hpp>
 #include <engine/common/interaction/Functor_Prototypes.hpp>
+#include <engine/spin/interaction/Functor_Prototypes.hpp>
 #include <engine/spin_lattice/StateType.hpp>
 
 namespace Engine
@@ -128,6 +129,78 @@ struct Gradient_Functor : public DataRef
 
     using DataRef::DataRef;
 };
+
+namespace SpinWrapper
+{
+
+namespace Spin = Spin::Interaction::Functor::Local;
+
+template<typename InteractionType>
+struct Energy_Functor : public Spin::Energy_Functor<Spin::DataRef<typename InteractionType::base_t>>
+{
+private:
+    using base_t = typename Spin::Energy_Functor<Spin::DataRef<typename InteractionType::base_t>>;
+
+public:
+    using Interaction = InteractionType;
+    using Data        = typename Interaction::base_t::Data;
+    using Cache       = typename Interaction::base_t::Cache;
+    using Index       = typename Interaction::base_t::Index;
+
+    SPIRIT_HOSTDEVICE scalar operator()( const Index & index, quantity<const Vector3 *> state ) const
+    {
+        return base_t::operator()( index, state.spin );
+    };
+
+    using base_t::base_t;
+};
+
+template<Field value, typename InteractionType>
+struct Gradient_Functor : public Spin::Gradient_Functor<Spin::DataRef<typename InteractionType::base_t>>
+{
+private:
+    using base_t = typename Spin::Gradient_Functor<Spin::DataRef<typename InteractionType::base_t>>;
+
+public:
+    using Interaction = InteractionType;
+    using Data        = typename Interaction::Data;
+    using Cache       = typename Interaction::Cache;
+    using Index       = typename Interaction::Index;
+
+    static constexpr Field field = value;
+
+    SPIRIT_HOSTDEVICE Vector3 operator()( const Index &, quantity<const Vector3 *> ) const
+    {
+        return Vector3::Zero();
+    };
+
+    using base_t::base_t;
+};
+
+template<typename InteractionType>
+struct Gradient_Functor<Field::Spin, InteractionType>
+        : public Spin::Gradient_Functor<Spin::DataRef<typename InteractionType::base_t>>
+{
+private:
+    using base_t = typename Spin::Gradient_Functor<Spin::DataRef<typename InteractionType::base_t>>;
+
+public:
+    using Interaction = InteractionType;
+    using Data        = typename Interaction::Data;
+    using Cache       = typename Interaction::Cache;
+    using Index       = typename Interaction::Index;
+
+    static constexpr Field field = Field::Spin;
+
+    SPIRIT_HOSTDEVICE Vector3 operator()( const Index & index, quantity<const Vector3 *> state ) const
+    {
+        return base_t::operator()( index, state.spin );
+    };
+
+    using base_t::base_t;
+};
+
+} // namespace SpinWrapper
 
 } // namespace Local
 
