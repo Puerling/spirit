@@ -40,6 +40,10 @@ public:
     constexpr Span( Iterator begin, Iterator end ) noexcept
             : data_( std::addressof( *begin ) ), size_( static_cast<size_type>( std::distance( begin, end ) ) ){};
 
+    SPIRIT_HOSTDEVICE constexpr pointer data()
+    {
+        return data_;
+    }
     SPIRIT_HOSTDEVICE constexpr pointer begin()
     {
         return data_;
@@ -49,6 +53,10 @@ public:
         return data_ + size_;
     }
 
+    SPIRIT_HOSTDEVICE constexpr const_pointer data() const
+    {
+        return data_;
+    }
     SPIRIT_HOSTDEVICE constexpr const_pointer begin() const
     {
         return data_;
