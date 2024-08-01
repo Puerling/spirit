@@ -13,11 +13,14 @@ namespace IO
 // The supported OOMF Vector Field (OVF) file formats
 enum class VF_FileFormat
 {
+    // OVF
     OVF_BIN  = IO_Fileformat_OVF_bin,
     OVF_BIN4 = IO_Fileformat_OVF_bin4,
     OVF_BIN8 = IO_Fileformat_OVF_bin8,
     OVF_TEXT = IO_Fileformat_OVF_text,
-    OVF_CSV  = IO_Fileformat_OVF_csv
+    OVF_CSV  = IO_Fileformat_OVF_csv,
+    // VTK
+    VTK_HDF = IO_Fileformat_VTK_hdf,
 };
 
 inline std::string str( IO::VF_FileFormat format )
@@ -32,6 +35,8 @@ inline std::string str( IO::VF_FileFormat format )
         return "text OVF";
     else if( format == IO::VF_FileFormat::OVF_CSV )
         return "CSV OVF";
+    else if( format == IO::VF_FileFormat::VTK_HDF )
+        return "HDF5 (VTK)";
     else
         return "unknown";
 }

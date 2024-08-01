@@ -32,6 +32,9 @@ FILEFORMAT_OVF_TEXT = 3
 FILEFORMAT_OVF_CSV = 4
 """OVF text format with comma-separated columns"""
 
+FILEFORMAT_VTK_HDF = 90
+"""VTK compatible format with hdf5 storage"""
+
 _N_Images_In_File = _spirit.IO_N_Images_In_File
 _N_Images_In_File.argtypes = [
     ctypes.c_void_p,

@@ -38,6 +38,9 @@ Spirit uses the OOMMF vector field file format with some minor variations.
 // OVF text format with comma-separated columns
 #define IO_Fileformat_OVF_csv 4
 
+// VTK compatible format with hdf5 storage
+#define IO_Fileformat_VTK_hdf 90
+
 /*
 Other
 --------------------------------------------------------------------

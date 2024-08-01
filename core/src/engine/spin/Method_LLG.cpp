@@ -3,8 +3,10 @@
 #include <data/Spin_System_Chain.hpp>
 #include <engine/Vectormath.hpp>
 #include <engine/spin/Method_LLG.hpp>
+#include <io/HDF5_File.hpp>
 #include <io/IO.hpp>
 #include <io/OVF_File.hpp>
+#include <io/VTK_Geometry.hpp>
 #include <utility/Logging.hpp>
 #include <utility/Version.hpp>
 
@@ -254,29 +256,59 @@ void Method_LLG<solver>::Save_Current( std::string starttime, int iteration, boo
             try
             {
                 // File name and comment
-                std::string spinsFile      = preSpinsFile + suffix + ".ovf";
+                std::string spinsFile      = preSpinsFile + suffix;
                 std::string output_comment = fmt::format(
                     "{} simulation ({} solver)\n# Desc:      Iteration: {}\n# Desc:      Maximum torque: {}",
                     this->Name(), this->SolverFullName(), iteration, this->max_torque );
 
                 // File format
-                IO::VF_FileFormat format = sys.llg_parameters->output_vf_filetype;
+                switch( IO::VF_FileFormat format = sys.llg_parameters->output_vf_filetype )
+                {
+                    case IO::VF_FileFormat::OVF_BIN:
+                    case IO::VF_FileFormat::OVF_BIN4:
+                    case IO::VF_FileFormat::OVF_BIN8:
+                    case IO::VF_FileFormat::OVF_TEXT:
+                    case IO::VF_FileFormat::OVF_CSV:
+                    {
+                        // Spin Configuration
+                        auto & spins        = *sys.state;
+                        auto segment        = IO::OVF_Segment( sys.hamiltonian->get_geometry() );
+                        std::string title   = fmt::format( "SPIRIT Version {}", Utility::version_full );
+                        segment.title       = strdup( title.c_str() );
+                        segment.comment     = strdup( output_comment.c_str() );
+                        segment.valuedim    = IO::Spin::State::valuedim;
+                        segment.valuelabels = strdup( IO::Spin::State::valuelabels.data() );
+                        segment.valueunits  = strdup( IO::Spin::State::valueunits.data() );
 
-                // Spin Configuration
-                auto & spins        = *sys.state;
-                auto segment        = IO::OVF_Segment( sys.hamiltonian->get_geometry() );
-                std::string title   = fmt::format( "SPIRIT Version {}", Utility::version_full );
-                segment.title       = strdup( title.c_str() );
-                segment.comment     = strdup( output_comment.c_str() );
-                segment.valuedim    = IO::Spin::State::valuedim;
-                segment.valuelabels = strdup( IO::Spin::State::valuelabels.data() );
-                segment.valueunits  = strdup( IO::Spin::State::valueunits.data() );
-
-                const IO::Spin::State::Buffer buffer( spins );
-                if( append )
-                    IO::OVF_File( spinsFile ).append_segment( segment, buffer.data(), static_cast<int>( format ) );
-                else
-                    IO::OVF_File( spinsFile ).write_segment( segment, buffer.data(), static_cast<int>( format ) );
+                        const IO::Spin::State::Buffer buffer( spins );
+                        if( append )
+                            IO::OVF_File( spinsFile + ".ovf" )
+                                .append_segment( segment, buffer.data(), static_cast<int>( format ) );
+                        else
+                            IO::OVF_File( spinsFile + ".ovf" )
+                                .write_segment( segment, buffer.data(), static_cast<int>( format ) );
+                        break;
+                    }
+                    case IO::VF_FileFormat::VTK_HDF:
+                    {
+                        // TODO: store this somewhere (e.g. with the method), because creating it is fairly expensive
+                        IO::VTK::UnstructuredGrid vtk_geometry( sys.hamiltonian->get_geometry() );
+                        if( append )
+                            spirit_throw(
+                                Exception_Classifier::Not_Implemented, Log_Level::Error,
+                                "Append not implemented for VTKHDF format!" );
+                        else
+                            IO::HDF5::write_fields(
+                                spinsFile + ".vtkhdf", vtk_geometry,
+                                { IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( *sys.state ) } } );
+                        break;
+                    }
+                    default:
+                        spirit_throw(
+                            Exception_Classifier::Not_Implemented, Log_Level::Error,
+                            fmt::format(
+                                "\"writeOutputConfiguration()\" not implemented for file format: {}", str( format ) ) );
+                }
             }
             catch( ... )
             {
