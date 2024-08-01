@@ -26,6 +26,7 @@ option( SPIRIT_USE_STDPAR       "Use parallel STL to speed up certain parts of t
 option( SPIRIT_USE_OPENMP       "Use OpenMP to speed up certain parts of the code."      OFF )
 option( SPIRIT_USE_THREADS      "Use std threads to speed up certain parts of the code." OFF )
 option( SPIRIT_USE_FFTW         "If available, use the FFTW library instead of kissFFT." ON  )
+option( SPIRIT_USE_HDF5         "Enable HDF5 library for data export and import."        OFF )
 ### Set the scalar type used in the Spirit library
 option( SPIRIT_SCALAR_TYPE      "Use std threads to speed up certain parts of the code." "double" )
 ### Set the compute capability for CUDA compilation
@@ -309,6 +310,22 @@ message( STATUS ">> Using FFT lib:     ${FFT_LIB}" )
 message( STATUS ">> With include dirs: ${FFT_INCLUDE_DIRS}" )
 ####################################################################
 
+######### HDF5 library for data export and import ##################
+if( SPIRIT_USE_HDF5 )
+    find_package( HDF5 COMPONENTS CXX HL REQUIRED )
+
+    if ( HDF5_FOUND )
+        message( STATUS ">> HDF5 found.")
+        set(HDF5_LIB ${HDF5_CXX_LIBRARIES})
+        set(SPIRIT_COMPILE_DEFINITIONS ${SPIRIT_COMPILE_DEFINITIONS} -DSPIRIT_USE_HDF5)
+    else()
+        message( STATUS ">> HDF5 could not be found.")
+        message( WARNING "Could not find high level HDF5 library -> disabling HDF5 feature" )
+        set(SPIRIT_USE_HDF5 OFF)
+    endif()
+endif()
+####################################################################
+
 ######### Generate Version.hpp #####################################
 configure_file( ${CMAKE_CURRENT_LIST_DIR}/CMake/Spirit_Version.hpp.in ${CMAKE_CURRENT_LIST_DIR}/include/utility/Version.hpp )
 ####################################################################
@@ -397,10 +414,11 @@ target_include_directories( ${META_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/thirdparty/spectra/include
     ${libfmt_INCLUDE_DIRS}
     ${qhull_INCLUDE_DIRS}
-    ${FFT_INCLUDE_DIRS} )
+    ${FFT_INCLUDE_DIRS}
+    ${HDF5_INCLUDE_DIRS} )
 
 target_link_libraries( ${META_PROJECT_NAME} INTERFACE
-    ${qhull_LIBS} ${OVF_LIBRARIES_STATIC} ${FFT_LIB} ${THREAD_LIBS} ${TBB_LIB} )
+    ${qhull_LIBS} ${OVF_LIBRARIES_STATIC} ${HDF5_LIB} ${FFT_LIB} ${THREAD_LIBS} ${TBB_LIB} )
 
 ### Flag needed to use fmt as header-only
 set( SPIRIT_COMPILE_DEFINITIONS ${SPIRIT_COMPILE_DEFINITIONS} -DFMT_HEADER_ONLY )

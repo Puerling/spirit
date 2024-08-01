@@ -7,8 +7,10 @@
 #include <data/Spin_System_Chain.hpp>
 #include <data/State.hpp>
 #include <io/Filter_File_Handle.hpp>
+#include <io/HDF5_File.hpp>
 #include <io/IO.hpp>
 #include <io/OVF_File.hpp>
+#include <io/VTK_Geometry.hpp>
 #include <memory>
 #include <utility/Exception.hpp>
 #include <utility/Logging.hpp>
@@ -296,20 +298,16 @@ try
     // Fetch correct indices and pointers
     auto [image, chain] = from_indices( state, idx_image, idx_chain );
 
+    using Engine::Field;
+    using Engine::get;
+
     // Write the data
     image->lock();
 
     try
     {
-        if( Get_Extension( filename ) != ".ovf" )
-            Log( Utility::Log_Level::Warning, Utility::Log_Sender::API,
-                 fmt::format(
-                     "The file \"{}\" is written in OVF format but has different extension. "
-                     "It is recommend to use the appropriate \".ovf\" extension",
-                     filename ),
-                 idx_image, idx_chain );
-
-        switch( auto fileformat = static_cast<IO::VF_FileFormat>( format ) )
+        auto fileformat = static_cast<IO::VF_FileFormat>( format );
+        switch( fileformat )
         {
             case IO::VF_FileFormat::OVF_BIN:
             case IO::VF_FileFormat::OVF_BIN4:
@@ -317,6 +315,14 @@ try
             case IO::VF_FileFormat::OVF_TEXT:
             case IO::VF_FileFormat::OVF_CSV:
             {
+                if( Get_Extension( filename ) != ".ovf" )
+                    Log( Utility::Log_Level::Warning, Utility::Log_Sender::API,
+                         fmt::format(
+                             "The file \"{}\" is written in OVF format but has different extension. "
+                             "It is recommend to use the appropriate \".ovf\" extension",
+                             filename ),
+                         idx_image, idx_chain );
+
                 auto segment              = IO::OVF_Segment( image->hamiltonian->get_geometry() );
                 const auto & system_state = *image->state;
 
@@ -330,11 +336,24 @@ try
                 // Open and write
                 const auto buffer = IO::State::Buffer( system_state );
                 IO::OVF_File( filename ).write_segment( segment, buffer.data(), format );
+                break;
+            }
+            case IO::VF_FileFormat::VTK_HDF:
+            {
+                if( Get_Extension( filename ) != ".vtkhdf" )
+                    Log( Utility::Log_Level::Warning, Utility::Log_Sender::API,
+                         fmt::format(
+                             "The file \"{}\" is written in VTKHDF format but has different extension. "
+                             "It is recommend to use the appropriate \".vtkhdf\" extension",
+                             filename ),
+                         idx_image, idx_chain );
 
-                Log( Utility::Log_Level::Info, Utility::Log_Sender::API,
-                     fmt::format( "Wrote spins to file \"{}\" in {} format", filename, str( fileformat ) ), idx_image,
-                     idx_chain );
+                IO::VTK::UnstructuredGrid vtk_geometry( image->hamiltonian->get_geometry() );
+                const auto & system_state = *image->state;
 
+                IO::HDF5::write_fields(
+                    filename, vtk_geometry,
+                    { IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( system_state ) } } );
                 break;
             }
             default:
@@ -344,6 +363,9 @@ try
                     fmt::format( "Invalid file format index {}", format ) );
             }
         }
+        Log( Utility::Log_Level::Info, Utility::Log_Sender::API,
+             fmt::format( "Wrote spins to file \"{}\" in {} format", filename, str( fileformat ) ), idx_image,
+             idx_chain );
     }
     catch( ... )
     {
@@ -404,6 +426,12 @@ try
                 IO::OVF_File( filename ).write_segment( segment, buffer.data(), format );
 
                 break;
+            }
+            case IO::VF_FileFormat::VTK_HDF:
+            {
+                spirit_throw(
+                    Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+                    "Append not implemented for VTKHDF format!" );
             }
             default:
             {
