@@ -360,7 +360,13 @@ try
 
                 IO::HDF5::write_fields(
                     filename, vtk_geometry,
-                    { IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( system_state ) } } );
+                    {
+                        IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( system_state ) },
+#ifdef SPIRIT_ENABLE_LATTICE
+                        IO::VTK::FieldDescriptor{ "displacement", &get<Field::Displacement>( system_state ) },
+                        IO::VTK::FieldDescriptor{ "momentum", &get<Field::Momentum>( system_state ) },
+#endif
+                    } );
                 break;
             }
             case IO::VF_FileFormat::VTK_XML_TEXT:
