@@ -385,7 +385,13 @@ try
 
                 IO::XML::write_fields(
                     filename, vtk_geometry, fileformat,
-                    { IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( system_state ) } } );
+                    {
+                        IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( system_state ) },
+#ifdef SPIRIT_ENABLE_LATTICE
+                        IO::VTK::FieldDescriptor{ "displacement", &get<Field::Displacement>( system_state ) },
+                        IO::VTK::FieldDescriptor{ "momentum", &get<Field::Momentum>( system_state ) },
+#endif
+                    } );
                 break;
             }
             default:
