@@ -4,6 +4,7 @@ set(HEADER_SPIRIT_IO
     ${CMAKE_CURRENT_SOURCE_DIR}/Flags.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/HDF5_File.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/OVF_File.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/XML_File.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Filter_File_Handle.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Configparser.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Configwriter.hpp

@@ -20,7 +20,9 @@ enum class VF_FileFormat
     OVF_TEXT = IO_Fileformat_OVF_text,
     OVF_CSV  = IO_Fileformat_OVF_csv,
     // VTK
-    VTK_HDF = IO_Fileformat_VTK_hdf,
+    VTK_HDF      = IO_Fileformat_VTK_hdf,
+    VTK_XML_BIN  = IO_Fileformat_VTK_XML_bin,
+    VTK_XML_TEXT = IO_Fileformat_VTK_XML_text,
 };
 
 inline std::string str( IO::VF_FileFormat format )
@@ -37,6 +39,10 @@ inline std::string str( IO::VF_FileFormat format )
         return "CSV OVF";
     else if( format == IO::VF_FileFormat::VTK_HDF )
         return "HDF5 (VTK)";
+    else if( format == IO::VF_FileFormat::VTK_XML_BIN )
+        return "XML with binary data (VTK)";
+    else if( format == IO::VF_FileFormat::VTK_XML_TEXT )
+        return "XML with ascii data (VTK)";
     else
         return "unknown";
 }

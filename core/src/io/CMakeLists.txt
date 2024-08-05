@@ -15,6 +15,7 @@ set(SOURCE_SPIRIT_IO
     ${CMAKE_CURRENT_SOURCE_DIR}/Filter_File_Handle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/OVF_File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/HDF5_File.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/XML_File.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
     PARENT_SCOPE
 )
@@ -31,6 +32,7 @@ if( SPIRIT_USE_CUDA )
         ${CMAKE_CURRENT_LIST_DIR}/Filter_File_Handle.cpp
         ${CMAKE_CURRENT_LIST_DIR}/OVF_File.cpp
         ${CMAKE_CURRENT_LIST_DIR}/HDF5_File.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/XML_File.cpp
         PARENT_SCOPE
     )
 endif()

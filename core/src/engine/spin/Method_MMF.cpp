@@ -7,6 +7,7 @@
 #include <io/IO.hpp>
 #include <io/OVF_File.hpp>
 #include <io/VTK_Geometry.hpp>
+#include <io/XML_File.hpp>
 #include <utility/Logging.hpp>
 #include <utility/Version.hpp>
 
@@ -514,6 +515,21 @@ void Method_MMF<solver>::Save_Current( std::string starttime, int iteration, boo
                         else
                             IO::HDF5::write_fields(
                                 spinsFile + ".vtkhdf", vtk_geometry,
+                                { IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( *sys.state ) } } );
+                        break;
+                    }
+                    case IO::VF_FileFormat::VTK_XML_TEXT:
+                    case IO::VF_FileFormat::VTK_XML_BIN:
+                    {
+                        // TODO: store this somewhere (e.g. with the method), because creating it is fairly expensive
+                        IO::VTK::UnstructuredGrid vtk_geometry( sys.hamiltonian->get_geometry() );
+                        if( append )
+                            spirit_throw(
+                                Exception_Classifier::Not_Implemented, Log_Level::Error,
+                                "Append not implemented for VTK format!" );
+                        else
+                            IO::XML::write_fields(
+                                spinsFile + ".vtu", vtk_geometry, format,
                                 { IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( *sys.state ) } } );
                         break;
                     }
