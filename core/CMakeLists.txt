@@ -310,6 +310,16 @@ message( STATUS ">> Using FFT lib:     ${FFT_LIB}" )
 message( STATUS ">> With include dirs: ${FFT_INCLUDE_DIRS}" )
 ####################################################################
 
+######### TinyXML library ##########################################
+set( XML_LIB tinyxml2 )
+set( XML_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/tinyxml2 )
+set( XML_INCLUDE_DIRS ${XML_INCLUDE_DIRS} )
+
+add_library( ${XML_LIB} STATIC
+    ${XML_INCLUDE_DIR}/tinyxml2.h
+    ${XML_INCLUDE_DIR}/tinyxml2.cpp )
+####################################################################
+
 ######### HDF5 library for data export and import ##################
 if( SPIRIT_USE_HDF5 )
     find_package( HDF5 COMPONENTS CXX HL REQUIRED )
@@ -415,10 +425,11 @@ target_include_directories( ${META_PROJECT_NAME} PRIVATE
     ${libfmt_INCLUDE_DIRS}
     ${qhull_INCLUDE_DIRS}
     ${FFT_INCLUDE_DIRS}
+    ${XML_INCLUDE_DIRS}
     ${HDF5_INCLUDE_DIRS} )
 
 target_link_libraries( ${META_PROJECT_NAME} INTERFACE
-    ${qhull_LIBS} ${OVF_LIBRARIES_STATIC} ${HDF5_LIB} ${FFT_LIB} ${THREAD_LIBS} ${TBB_LIB} )
+    ${qhull_LIBS} ${OVF_LIBRARIES_STATIC} ${XML_LIB} ${HDF5_LIB} ${FFT_LIB} ${THREAD_LIBS} ${TBB_LIB} )
 
 ### Flag needed to use fmt as header-only
 set( SPIRIT_COMPILE_DEFINITIONS ${SPIRIT_COMPILE_DEFINITIONS} -DFMT_HEADER_ONLY )
