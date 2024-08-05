@@ -41,6 +41,12 @@ Spirit uses the OOMMF vector field file format with some minor variations.
 // VTK compatible format with hdf5 storage
 #define IO_Fileformat_VTK_hdf 90
 
+// VTK compatible format with binary XML storage
+#define IO_Fileformat_VTK_XML_bin 91
+
+// VTK compatible format with XML text storage
+#define IO_Fileformat_VTK_XML_text 92
+
 /*
 Other
 --------------------------------------------------------------------

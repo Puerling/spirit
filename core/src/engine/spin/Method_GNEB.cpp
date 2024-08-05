@@ -618,6 +618,13 @@ void Method_GNEB<solver>::Save_Current( std::string starttime, int iteration, bo
                             Exception_Classifier::Not_Implemented, Log_Level::Error,
                             "Cannot write chain data: Append not implemented for VTKHDF format!" );
                     }
+                    case IO::VF_FileFormat::VTK_XML_BIN:
+                    case IO::VF_FileFormat::VTK_XML_TEXT:
+                    {
+                        spirit_throw(
+                            Exception_Classifier::Not_Implemented, Log_Level::Error,
+                            "Cannot write chain data: Append not implemented for VTK format!" );
+                    }
                     default:
                         spirit_throw(
                             Exception_Classifier::Not_Implemented, Log_Level::Error,

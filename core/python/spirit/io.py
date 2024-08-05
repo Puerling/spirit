@@ -35,6 +35,12 @@ FILEFORMAT_OVF_CSV = 4
 FILEFORMAT_VTK_HDF = 90
 """VTK compatible format with hdf5 storage"""
 
+FILEFORMAT_VTK_XML_BIN = 91
+"""VTK compatible format with binary XML storage"""
+
+FILEFORMAT_VTK_XML_TEXT = 92
+"""VTK compatible format with XML text storage"""
+
 _N_Images_In_File = _spirit.IO_N_Images_In_File
 _N_Images_In_File.argtypes = [
     ctypes.c_void_p,

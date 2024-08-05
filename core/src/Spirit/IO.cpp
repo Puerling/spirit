@@ -11,6 +11,7 @@
 #include <io/IO.hpp>
 #include <io/OVF_File.hpp>
 #include <io/VTK_Geometry.hpp>
+#include <io/XML_File.hpp>
 #include <memory>
 #include <utility/Exception.hpp>
 #include <utility/Logging.hpp>
@@ -356,6 +357,25 @@ try
                     { IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( system_state ) } } );
                 break;
             }
+            case IO::VF_FileFormat::VTK_XML_TEXT:
+            case IO::VF_FileFormat::VTK_XML_BIN:
+            {
+                if( Get_Extension( filename ) != ".vtu" )
+                    Log( Utility::Log_Level::Warning, Utility::Log_Sender::API,
+                         fmt::format(
+                             "The file \"{}\" is written in VTK (UnstructuredGrid) format but has different extension. "
+                             "It is recommend to use the appropriate \".vtu\" extension",
+                             filename ),
+                         idx_image, idx_chain );
+
+                IO::VTK::UnstructuredGrid vtk_geometry( image->hamiltonian->get_geometry() );
+                const auto & system_state = *image->state;
+
+                IO::XML::write_fields(
+                    filename, vtk_geometry, fileformat,
+                    { IO::VTK::FieldDescriptor{ "spins", &get<Field::Spin>( system_state ) } } );
+                break;
+            }
             default:
             {
                 spirit_throw(
@@ -432,6 +452,13 @@ try
                 spirit_throw(
                     Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
                     "Append not implemented for VTKHDF format!" );
+            }
+            case IO::VF_FileFormat::VTK_XML_BIN:
+            case IO::VF_FileFormat::VTK_XML_TEXT:
+            {
+                spirit_throw(
+                    Utility::Exception_Classifier::Not_Implemented, Utility::Log_Level::Error,
+                    "Cannot write chain data: Append not implemented for VTK format!" );
             }
             default:
             {
