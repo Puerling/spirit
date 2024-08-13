@@ -381,7 +381,7 @@ try
         Utility::Configurations::Random_Sphere( get<Field::Spin>( *image->state ), geometry, *prng, filter );
 #ifdef SPIRIT_ENABLE_LATTICE
         Utility::Configurations::Random_Cube( get<Field::Displacement>( *image->state ), geometry, *prng, filter );
-        Utility::Configurations::Random_Cube( get<Field::Displacement>( *image->state ), geometry, *prng, filter );
+        Utility::Configurations::Random_Cube( get<Field::Momentum>( *image->state ), geometry, *prng, filter );
 #endif
     }
     geometry.Apply_Pinning( get<Field::Spin>( *image->state ) );
