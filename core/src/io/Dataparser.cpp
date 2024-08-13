@@ -165,8 +165,9 @@ void Basis_from_File(
         basis_file_handle >> n_cell_atoms;
         cell_atoms = std::vector<Vector3>( n_cell_atoms );
         cell_composition.iatom.resize( n_cell_atoms );
-        cell_composition.atom_type = std::vector<int>( n_cell_atoms, 0 );
-        cell_composition.mu_s      = std::vector<scalar>( n_cell_atoms, 1 );
+        cell_composition.atom_type    = std::vector<int>( n_cell_atoms, 0 );
+        cell_composition.mu_s         = std::vector<scalar>( n_cell_atoms, 1 );
+        cell_composition.lattice_mass = std::vector<scalar>( n_cell_atoms, 1 );
 
         // Read atom positions
         for( std::size_t iatom = 0; iatom < n_cell_atoms; ++iatom )

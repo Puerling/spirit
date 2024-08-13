@@ -21,42 +21,25 @@ struct Lattice_Kinetic
 
     struct Data
     {
-        intfield indices{};
-        scalarfield magnitudes{}; // inverse masses
-        vectorfield normals{};
-
-        Data() = default;
-        Data( intfield indices, scalarfield magnitudes, vectorfield normals )
-                : indices( std::move( indices ) ),
-                  magnitudes( std::move( magnitudes ) ),
-                  normals( std::move( normals ) ) {};
     };
 
-    static bool valid_data( const Data & data )
+    static bool valid_data( const Data & )
     {
-        using std::begin, std::end;
-
-        if( 3 * data.indices.size() != data.magnitudes.size() || 3 * data.indices.size() != data.normals.size() )
-            return false;
-        if( std::any_of( begin( data.indices ), end( data.indices ), []( const int & i ) { return i < 0; } ) )
-            return false;
-
         return true;
     }
 
     struct Cache
     {
+        const ::Data::Geometry * geometry;
     };
 
-    static bool is_contributing( const Data & data, const Cache & )
+    static bool is_contributing( const Data &, const Cache & )
     {
-        return !data.indices.empty();
+        return true;
     };
 
-    struct IndexType
-    {
-        int ispin, iani;
-    };
+    // clang-tidy: ignore
+    typedef int IndexType;
 
     using Index        = const IndexType *;
     using IndexStorage = Backend::optional<IndexType>;
@@ -75,19 +58,25 @@ struct Lattice_Kinetic
 
     template<typename IndexStorageVector>
     static void applyGeometry(
-        const ::Data::Geometry & geometry, const intfield &, const Data & data, Cache &, IndexStorageVector & indices )
+        const ::Data::Geometry & geometry, const intfield &, const Data &, Cache & cache, IndexStorageVector & indices )
     {
         using Indexing::check_atom_type;
 
+        const auto N = geometry.n_cell_atoms;
+
         for( int icell = 0; icell < geometry.n_cells_total; ++icell )
         {
-            for( unsigned int iani = 0; iani < data.indices.size(); ++iani )
+            for( int ibasis = 0; ibasis < N; ++ibasis )
             {
-                int ispin = icell * geometry.n_cell_atoms + data.indices[iani];
+                const int ispin = icell * N + ibasis;
                 if( check_atom_type( geometry.atom_types[ispin] ) )
-                    Backend::get<IndexStorage>( indices[ispin] ) = IndexType{ ispin, (int)iani };
-            }
+                {
+                    Backend::get<IndexStorage>( indices[ispin] ) = ispin;
+                }
+            };
         }
+
+        cache.geometry = &geometry;
     };
 };
 
@@ -100,54 +89,37 @@ struct Functor::Local::DataRef<Lattice_Kinetic>
 
     DataRef( const Data & data, const Cache & cache ) noexcept
             : is_contributing( Interaction::is_contributing( data, cache ) ),
-              normals( data.normals.data() ),
-              magnitudes( data.magnitudes.data() ) {};
+              inverse_mass( cache.geometry->inverse_mass.data() ) {};
 
     const bool is_contributing;
 
 protected:
-    const Vector3 * normals;
-    const scalar * magnitudes;
+    const scalar * inverse_mass;
 };
 
 template<>
 inline scalar Lattice_Kinetic::Energy::operator()( const Index & index, quantity<const Vector3 *> state ) const
 {
-    scalar result = 0.0;
     if( is_contributing && index != nullptr )
     {
-        const auto & [ispin, iani] = *index;
-#pragma unroll
-        for( auto i = 0; i < 3; ++i )
-        {
-            const auto d = normals[3 * iani + i].dot( state.momentum[ispin] );
-            result += magnitudes[3 * iani + i] * d * d;
-        }
+        const auto ispin = *index;
 
-        return 0.5 * result;
+        return 0.5 * inverse_mass[ispin] * state.momentum[ispin].squaredNorm();
     }
-    else
-    {
-        return result;
-    }
+    return 0.0;
 }
 
 template<>
 inline Vector3
 Lattice_Kinetic::Gradient<Field::Momentum>::operator()( const Index & index, quantity<const Vector3 *> state ) const
 {
-    Vector3 result = Vector3::Zero();
     if( is_contributing && index != nullptr )
     {
-        const auto & [ispin, iani] = *index;
-#pragma unroll
-        for( auto i = 0; i < 3; ++i )
-        {
-            const auto d = normals[3 * iani + i].dot( state.momentum[ispin] );
-            result += ( d * magnitudes[3 * iani + i] ) * normals[3 * iani + i];
-        }
+        const auto ispin = *index;
+
+        return inverse_mass[ispin] * state.momentum[ispin];
     }
-    return result;
+    return Vector3::Zero();
 }
 
 } // namespace Interaction

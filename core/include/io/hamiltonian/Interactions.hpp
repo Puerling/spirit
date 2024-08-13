@@ -54,10 +54,6 @@ void Lattice_Harmonic_Potential_from_Config(
     const std::string & config_file_name, const Data::Geometry & geometry, std::vector<std::string> & parameter_log,
     Engine::SpinLattice::Interaction::Lattice_Harmonic_Potential::Data & data );
 
-void Lattice_Kinetic_from_Config(
-    const std::string & config_file_name, const Data::Geometry & geometry, std::vector<std::string> & parameter_log,
-    Engine::SpinLattice::Interaction::Lattice_Kinetic::Data & data );
-
 void Displacement_Anisotropy_from_Config(
     const std::string & config_file_name, const Data::Geometry & geometry, std::vector<std::string> & parameter_log,
     Engine::SpinLattice::Interaction::Displacement_Anisotropy::Data & data );

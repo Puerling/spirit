@@ -55,6 +55,8 @@ Geometry::Geometry(
     this->mask_unpinned     = intfield( this->nos, 1 );
     this->mask_pinned_cells = vectorfield( this->nos, { 0, 0, 0 } );
 
+    this->inverse_mass = scalarfield( this->nos, 1 );
+
     // Set atom types, mu_s
     this->applyCellComposition();
 
@@ -534,9 +536,10 @@ void Geometry::applyCellComposition()
                             rvalue        = distribution( prng );
                             if( rvalue <= concentration )
                             {
-                                this->atom_types[ispin] = this->cell_composition.atom_type[icomposition];
-                                this->mu_s[ispin]       = this->cell_composition.mu_s[icomposition];
-                                visited[iatom]          = true;
+                                this->atom_types[ispin]   = this->cell_composition.atom_type[icomposition];
+                                this->mu_s[ispin]         = this->cell_composition.mu_s[icomposition];
+                                this->inverse_mass[ispin] = 1.0 / this->cell_composition.lattice_mass[icomposition];
+                                visited[iatom]            = true;
                                 if( this->atom_types[ispin] < 0 )
                                     --this->nos_nonvacant;
                             }
@@ -544,9 +547,10 @@ void Geometry::applyCellComposition()
                         // In the ordered case, we visit every atom
                         else
                         {
-                            this->atom_types[ispin] = this->cell_composition.atom_type[icomposition];
-                            this->mu_s[ispin]       = this->cell_composition.mu_s[icomposition];
-                            visited[iatom]          = true;
+                            this->atom_types[ispin]   = this->cell_composition.atom_type[icomposition];
+                            this->mu_s[ispin]         = this->cell_composition.mu_s[icomposition];
+                            this->inverse_mass[ispin] = 1.0 / this->cell_composition.lattice_mass[icomposition];
+                            visited[iatom]            = true;
                             if( this->atom_types[ispin] < 0 )
                                 --this->nos_nonvacant;
                         }

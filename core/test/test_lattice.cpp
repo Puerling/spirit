@@ -36,7 +36,7 @@ Data::Geometry make_dimer_geometry()
     return Data::Geometry(
         Data::Geometry::BravaisVectorsSC(), /*n_cells=*/{ 2, 1, 1 }, /*cell_atoms=*/{ Vector3::Zero() },
         Data::Basis_Cell_Composition{ /*disordered=*/false, /*iatom=*/{ 0 }, /*atom_type=*/{ 0 }, /*mu_s=*/{ 1 },
-                                      /*concentration=*/{} },
+                                      /*concentration=*/{}, /*lattice_mass=*/{ 1 } },
         /*lattice_constant=*/1.0, Data::Pinning(), Data::Defects() );
 }
 
@@ -49,10 +49,7 @@ TEST_CASE( "Dimer simulation through the (spring) lattice Hamiltonian", "[lattic
 
     auto hamiltonian = HamiltonianVariant( LatticeHamiltonian(
         /*geometry=*/make_dimer_geometry(),
-        /*bounary_conditions=*/intfield{ 0, 0, 0 },
-        typename Interaction::Lattice_Kinetic::Data(
-            /*indices=*/{ 0 }, /*magnitudes=*/{ 1.0, 1.0, 1.0 },
-            /*normals=*/{ Vector3{ 1, 0, 0 }, Vector3{ 0, 1, 0 }, Vector3{ 0, 0, 1 } } ),
+        /*bounary_conditions=*/intfield{ 0, 0, 0 }, typename Interaction::Lattice_Kinetic::Data{},
         typename Interaction::Lattice_Spring_Potential::Data(
             /*pairs=*/pairfield{ Pair{ 0, 0, { 1, 0, 0 } } }, /*magnitudes=*/scalarfield{ 1.0 } ) ) );
 
@@ -166,10 +163,7 @@ TEST_CASE( "Dimer simulation through the (harmonic) lattice Hamiltonian", "[latt
 
     auto hamiltonian = HamiltonianVariant( LatticeHamiltonian(
         /*geometry=*/make_dimer_geometry(),
-        /*bounary_conditions=*/intfield{ 0, 0, 0 },
-        typename Interaction::Lattice_Kinetic::Data(
-            /*indices=*/{ 0 }, /*magnitudes=*/{ 1.0, 1.0, 1.0 },
-            /*normals=*/{ Vector3{ 1, 0, 0 }, Vector3{ 0, 1, 0 }, Vector3{ 0, 0, 1 } } ),
+        /*bounary_conditions=*/intfield{ 0, 0, 0 }, typename Interaction::Lattice_Kinetic::Data{},
         typename Interaction::Lattice_Harmonic_Potential::Data(
             /*pairs=*/pairfield{ Pair{ 0, 0, { 1, 0, 0 } } },
             /*normals=*/vectorfield{ { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } },

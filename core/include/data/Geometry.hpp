@@ -73,6 +73,9 @@ struct Basis_Cell_Composition
 
     // Chemical concentration of an atom on a specific lattice site (if disorder is activated)
     std::vector<scalar> concentration;
+
+    // Mass of an atom in ...
+    std::vector<scalar> lattice_mass;
 };
 
 // Geometry contains all geometric information of a system
@@ -126,7 +129,7 @@ public:
     int n_cell_atoms;
     // Array of basis atom positions
     std::vector<Vector3> cell_atoms;
-    // Composition of the basis cell (atom types, mu_s, disorder)
+    // Composition of the basis cell (atom types, mu_s, disorder, mass)
     Basis_Cell_Composition cell_composition;
     // Info on pinned spins
     Pinning pinning;
@@ -159,10 +162,13 @@ public:
     // Unit Cell Bounds
     Vector3 cell_bounds_min, cell_bounds_max;
 
+    // mass of the atoms
+    scalarfield inverse_mass;
+
 private:
     // Generate the full set of spin positions
     void generatePositions();
-    // Apply the Basis_Cell_Composition to this geometry (i.e. set atom types, mu_s etc.)
+    // Apply the Basis_Cell_Composition to this geometry (i.e. set atom types, mu_s, mass etc.)
     void applyCellComposition();
     // Calculate and update the dimensionality of the points in this geometry
     void calculateDimensionality();

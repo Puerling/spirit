@@ -237,16 +237,10 @@ TEST_CASE( "Dynamics solvers should follow lattice excitations for a dimer", "[p
 
         const scalar omega = [&image]
         {
-            const auto * kinetic_data = image.hamiltonian->data<Engine::SpinLattice::Interaction::Lattice_Kinetic>();
+            const auto inverse_mass = image.hamiltonian->get_geometry().inverse_mass[0];
             const auto * potential_cache
                 = image.hamiltonian->cache<Engine::SpinLattice::Interaction::Lattice_Spring_Potential>();
-            REQUIRE( kinetic_data != nullptr );
-            REQUIRE( kinetic_data->magnitudes.size() >= 3 );
-            for( int i = 1; i < 3; ++i )
-            {
-                INFO( "i=" << i << "\n" )
-                REQUIRE( kinetic_data->magnitudes[0] == kinetic_data->magnitudes[i] );
-            }
+
             REQUIRE( potential_cache != nullptr );
             REQUIRE( !potential_cache->pairs.empty() );
             REQUIRE( potential_cache->pairs[0] == Pair{ 0, 0, { 1, 0, 0 } } );
@@ -256,7 +250,7 @@ TEST_CASE( "Dynamics solvers should follow lattice excitations for a dimer", "[p
             // factor 2 on the coupling constant due to the symmetric deflection (u_1 = -u_2)
             // dp_1/dt = k * (u_1 - u_2) = 2k * u_1
             // dp_2/dt = k * (u_2 - u_1) = 2k * u_2
-            return std::sqrt( 2 * kinetic_data->magnitudes[0] * potential_cache->magnitudes[0] );
+            return std::sqrt( 2 * inverse_mass * potential_cache->magnitudes[0] );
         }();
 
         constexpr auto idx = []( const int ispin, const int idim ) constexpr { return 3 * ispin + idim; };
@@ -322,11 +316,9 @@ TEST_CASE( "Dynamics solvers should follow lattice excitations for a dimer", "[p
 
         const scalar omega = [&image]
         {
-            const auto * kinetic_data = image.hamiltonian->data<Engine::SpinLattice::Interaction::Lattice_Kinetic>();
             const auto * potential_data
                 = image.hamiltonian->data<Engine::SpinLattice::Interaction::Lattice_Harmonic_Potential>();
-            REQUIRE( ( kinetic_data != nullptr && !kinetic_data->magnitudes.empty() ) );
-
+            const auto inverse_mass = image.hamiltonian->get_geometry().inverse_mass[0];
             REQUIRE( potential_data != nullptr );
             REQUIRE( !potential_data->pairs.empty() );
             REQUIRE( potential_data->pairs[0] == Pair{ 0, 0, { 0, 0, 0 } } );
@@ -335,7 +327,7 @@ TEST_CASE( "Dynamics solvers should follow lattice excitations for a dimer", "[p
             REQUIRE( !potential_data->magnitudes.empty() );
 
             // factor 2 on coupling constant due to definition of the force constant matrix
-            return std::sqrt( 2 * kinetic_data->magnitudes[0] * potential_data->magnitudes[0] );
+            return std::sqrt( 2 * inverse_mass * potential_data->magnitudes[0] );
         }();
 
         constexpr auto idx = []( const int ispin, const int idim ) constexpr { return 3 * ispin + idim; };

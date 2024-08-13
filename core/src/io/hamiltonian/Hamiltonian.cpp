@@ -266,14 +266,10 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_Lattice_Spr
     lattice_potential.magnitudes = scalarfield( 0 );
 
     Interaction::Lattice_Kinetic::Data lattice_kinetic{};
-    lattice_kinetic.magnitudes = scalarfield( 0 );
-    lattice_kinetic.normals    = vectorfield( 0 );
 
     //------------------------------- Parser --------------------------------
     if( !config_file_name.empty() )
     {
-        Lattice_Kinetic_from_Config( config_file_name, geometry, parameter_log, lattice_kinetic );
-
         Lattice_Spring_Potential_from_Config( config_file_name, geometry, parameter_log, lattice_potential );
     }
     else
@@ -311,14 +307,10 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_Lattice_Har
     lattice_potential.magnitudes = scalarfield( 0 );
 
     Interaction::Lattice_Kinetic::Data lattice_kinetic{};
-    lattice_kinetic.magnitudes = scalarfield( 0 );
-    lattice_kinetic.normals    = vectorfield( 0 );
 
     //------------------------------- Parser --------------------------------
     if( !config_file_name.empty() )
     {
-        Lattice_Kinetic_from_Config( config_file_name, geometry, parameter_log, lattice_kinetic );
-
         Lattice_Harmonic_Potential_from_Config( config_file_name, geometry, parameter_log, lattice_potential );
     }
     else
@@ -355,8 +347,6 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_RotInvarian
     lattice_potential.magnitudes = scalarfield( 0 );
 
     Interaction::Lattice_Kinetic::Data lattice_kinetic{};
-    lattice_kinetic.magnitudes = scalarfield( 0 );
-    lattice_kinetic.normals    = vectorfield( 0 );
 
     Interaction::Displacement_Anisotropy::Data displacement_anisotropy{};
     displacement_anisotropy.pairs      = pairfield( 0 );
@@ -379,8 +369,6 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_RotInvarian
     //------------------------------- Parser --------------------------------
     if( !config_file_name.empty() )
     {
-        Lattice_Kinetic_from_Config( config_file_name, geometry, parameter_log, lattice_kinetic );
-
         Lattice_Spring_Potential_from_Config( config_file_name, geometry, parameter_log, lattice_potential );
 
         Displacement_Anisotropy_from_Config( config_file_name, geometry, parameter_log, displacement_anisotropy );

@@ -289,7 +289,7 @@ Data::Geometry Geometry_from_Config( const std::string & config_file_name )
     std::vector<Vector3> cell_atoms = { Vector3{ 0, 0, 0 } };
     std::size_t n_cell_atoms        = cell_atoms.size();
     // Basis cell composition information (atom types, magnetic moments, ...)
-    Data::Basis_Cell_Composition cell_composition{ false, { 0 }, { 0 }, { 1 }, {} };
+    Data::Basis_Cell_Composition cell_composition{ false, { 0 }, { 0 }, { 1 }, {}, { 1 } };
     // Lattice Constant [Angstrom]
     scalar lattice_constant = 1;
     // Number of translations nT for each basis direction
@@ -393,6 +393,40 @@ Data::Geometry Geometry_from_Config( const std::string & config_file_name )
                 spirit_handle_exception_core(
                     fmt::format( "Unable to read mu_s from config file \"{}\"", config_file_name ) );
             }
+
+#ifdef SPIRIT_ENABLE_LATTICE
+            try
+            {
+                IO::Filter_File_Handle config_file_handle( config_file_name );
+
+                // Spin moment
+                if( config_file_handle.Find( "lattice_mass" ) )
+                {
+                    for( std::size_t iatom = 0; iatom < n_cell_atoms; ++iatom )
+                    {
+                        if( !( config_file_handle >> cell_composition.lattice_mass[iatom] ) )
+                        {
+                            Log( Log_Level::Warning, Log_Sender::IO,
+                                 fmt::format(
+                                     "Not enough values specified after 'lattice_mass'. Expected {}. Using "
+                                     "lattice_mass[{}]=lattice_mass[0]={}",
+                                     n_cell_atoms, iatom, cell_composition.lattice_mass[0] ) );
+                            cell_composition.lattice_mass[iatom] = cell_composition.lattice_mass[0];
+                        }
+                    }
+                }
+                else
+                    Log(
+                        Log_Level::Warning, Log_Sender::IO,
+                        fmt::format(
+                            "Keyword 'lattice_mass' not found. Using Default: {}", cell_composition.lattice_mass[0] ) );
+            }
+            catch( ... )
+            {
+                spirit_handle_exception_core(
+                    fmt::format( "Unable to read 'lattice_mass' from config file \"{}\"", config_file_name ) );
+            }
+#endif
 
             // Defects
 #ifdef SPIRIT_ENABLE_DEFECTS
