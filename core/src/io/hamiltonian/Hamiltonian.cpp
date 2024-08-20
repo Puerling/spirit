@@ -381,7 +381,7 @@ std::unique_ptr<Engine::SpinLattice::HamiltonianVariant> Hamiltonian_RotInvarian
             config_file_name, geometry, parameter_log, quadruplet.quadruplets, quadruplet.magnitudes );
     }
     else
-        Log( Log_Level::Parameter, Log_Sender::IO, "Hamiltonian_Lattice: Using default configuration!" );
+        Log( Log_Level::Parameter, Log_Sender::IO, "Hamiltonian_RotInvariant: Using default configuration!" );
 
     Log( Log_Level::Parameter, Log_Sender::IO, parameter_log );
 

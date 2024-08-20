@@ -78,7 +78,7 @@ try
         if( !seen_pairs.insert( pair ).second )
         {
             Log( Log_Level::Warning, Log_Sender::IO,
-                 fmt::format( "ignoring duplicate lattice spring potential at {}", pair ) );
+                 fmt::format( "lattice spring potential: ignoring duplicate pair: {}", pair ) );
             continue;
         }
 

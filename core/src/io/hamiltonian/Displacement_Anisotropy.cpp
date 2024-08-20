@@ -77,7 +77,8 @@ try
     {
         if( !seen_pairs.insert( pair ).second )
         {
-            Log( Log_Level::Warning, Log_Sender::IO, fmt::format( "ignoring duplicate pair: {}", pair ) );
+            Log( Log_Level::Warning, Log_Sender::IO,
+                 fmt::format( "displacement anisotropy: ignoring duplicate pair: {}", pair ) );
             continue;
         }
 

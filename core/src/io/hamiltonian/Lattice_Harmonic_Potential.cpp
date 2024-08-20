@@ -148,7 +148,7 @@ try
         if( !seen_pairs.insert( pair ).second )
         {
             Log( Log_Level::Warning, Log_Sender::IO,
-                 fmt::format( "ignoring duplicate for lattice harmonic potential tensor at {}", pair ) );
+                 fmt::format( "lattice harmonic potential: ignoring duplicate pair: {}", pair ) );
             continue;
         }
 
