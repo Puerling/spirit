@@ -29,6 +29,11 @@ struct Parameters_Method_LLG : Parameters_Method_Solver
     Vector3 temperature_gradient_direction  = Vector3{ 1, 0, 0 };
     scalar temperature_gradient_inclination = 0;
 
+    // Lattice ensemble quantities
+    scalar lattice_damping = 0;
+    // Temperature [K]
+    scalar lattice_temperature = 0;
+
     // - true:  use gradient approximation for STT
     // - false: use pinned monolayer approximation with current in z-direction
     bool stt_use_gradient = true;

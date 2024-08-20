@@ -15,6 +15,73 @@ namespace Engine
 namespace SpinLattice
 {
 
+namespace Common
+{
+
+template<Engine::Common::Solver solver>
+struct Method_LLG : Engine::Common::Method_LLG<solver>
+{
+    constexpr Method_LLG( const int nos ) : Engine::Common::Method_LLG<solver>( nos ), xi( nos, Vector3::Zero() ) {};
+
+    void Prepare_Thermal_Field( Data::Parameters_Method_LLG & parameters, const Data::Geometry & geometry )
+    {
+        namespace Constants = Utility::Constants;
+
+        Engine::Common::Method_LLG<solver>::Prepare_Thermal_Field( parameters, geometry );
+        const auto damping = parameters.lattice_damping;
+
+        const scalar epsilon
+            = std::sqrt( 2 * parameters.dt * damping * Constants::k_B * parameters.lattice_temperature );
+
+        auto distribution = std::normal_distribution<scalar>{ 0, 1 };
+
+        if( parameters.lattice_temperature > 0 )
+        {
+            // TODO: parallelization of this is actually not quite so trivial
+            // #pragma omp parallel for
+            for( std::size_t i = 0; i < xi.size(); ++i )
+            {
+                for( int dim = 0; dim < 3; ++dim )
+                    if( geometry.n_cells[dim] > 1 )
+                        xi[i][dim] = epsilon / std::sqrt( geometry.inverse_mass[i] ) * distribution( parameters.prng );
+                    else
+                        xi[i][dim] = 0;
+            }
+        }
+    }
+
+    // Langevin thermostat
+    void Virtual_Force_Momentum(
+        const Data::Parameters_Method_LLG & parameters, const Data::Geometry &, const intfield &,
+        const vectorfield & momentum, const vectorfield & displacement_force, vectorfield & force_virtual )
+    {
+        namespace Constants = Utility::Constants;
+
+        scalar dt            = parameters.dt;
+        const scalar damping = parameters.lattice_damping;
+
+        if( parameters.direct_minimization || solver == Engine::Common::Solver::VP )
+        {
+            Vectormath::set_c_a( dt, displacement_force, force_virtual );
+        }
+        // Dynamics simulation
+        else
+        {
+            Backend::transform(
+                SPIRIT_PAR Backend::make_zip_iterator( displacement_force.begin(), momentum.begin(), xi.begin() ),
+                Backend::make_zip_iterator( displacement_force.end(), momentum.end(), xi.end() ), force_virtual.begin(),
+                Backend::make_zip_function(
+                    [dt, damping] SPIRIT_LAMBDA( const Vector3 & f, const Vector3 p, const Vector3 xi ) -> Vector3
+                    { return dt * ( f - damping * p ) + xi; } ) );
+        }
+    }
+
+private:
+    vectorfield xi;
+};
+
+} // namespace Common
+
 /*
     The Landau-Lifshitz-Gilbert (LLG) method
 */
@@ -60,7 +127,7 @@ private:
     void Message_Block_Step( std::vector<std::string> & block ) override;
     void Message_Block_End( std::vector<std::string> & block ) override;
 
-    std::vector<Common::Method_LLG<common_solver( solver )>> common_methods;
+    std::vector<SpinLattice::Common::Method_LLG<common_solver( solver )>> common_methods;
 
     // Last calculated forces
     std::vector<quantity<vectorfield>> Gradient;

@@ -616,6 +616,7 @@ Data::Geometry Geometry_from_Config( const std::string & config_file_name )
             bravais_vectors, n_cells, cell_atoms, cell_composition, lattice_constant, Data::Pinning(),
             Data::Defects{ defect_sites, defect_types } );
     }
+
 } // End Geometry from Config
 
 intfield Boundary_Conditions_from_Config( const std::string & config_file_name )
@@ -838,6 +839,9 @@ std::unique_ptr<Data::Parameters_Method_LLG> Parameters_Method_LLG_from_Config( 
             config_file_handle.Read_Vector3( parameters->stt_polarisation_normal, "llg_stt_polarisation_normal" );
             parameters->stt_polarisation_normal.normalize();
             config_file_handle.Read_Single( parameters->force_convergence, "llg_force_convergence" );
+            // lattice parameters
+            config_file_handle.Read_Single( parameters->lattice_temperature, "llg_lattice_temperature" );
+            config_file_handle.Read_Single( parameters->lattice_damping, "llg_lattice_damping" );
         }
         catch( ... )
         {

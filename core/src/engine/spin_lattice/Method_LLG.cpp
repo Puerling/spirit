@@ -104,8 +104,11 @@ void Method_LLG<solver>::Calculate_Force_Virtual(
             *sys.llg_parameters, sys.hamiltonian->get_geometry(), sys.hamiltonian->get_boundary_conditions(),
             configurations[i]->spin, forces[i].spin, forces_virtual[i].spin );
 
+        common_methods[i].Virtual_Force_Momentum(
+            *sys.llg_parameters, sys.hamiltonian->get_geometry(), sys.hamiltonian->get_boundary_conditions(),
+            configurations[i]->momentum, forces[i].displacement, forces_virtual[i].momentum );
+
         const scalar dt = sys.llg_parameters->dt;
-        Vectormath::set_c_a( +dt, forces[i].displacement, forces_virtual[i].momentum );
         Vectormath::set_c_a( -dt, forces[i].momentum, forces_virtual[i].displacement );
     }
 }
